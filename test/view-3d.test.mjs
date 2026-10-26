@@ -7,10 +7,10 @@ import {W,H} from '../public/engine.js';
 test('3D world has 22 articulated players, two goals and a grounded ball',()=>{
   const world=createWorld();assert.equal(world.players.size,22);
   assert.ok(world.scene.getObjectByName('goal-left'));assert.ok(world.scene.getObjectByName('goal-right'));
-  assert.equal(world.ball.name,'match-ball');assert.ok(world.ball.position.y>0);
+  assert.equal(world.ball.name,'match-ball');assert.ok(world.ball.position.y>0);world.ball.geometry.computeBoundingSphere();assert.ok(world.ball.geometry.boundingSphere.radius<=.31);
   for(const [id,model] of world.players){
     assert.equal(model.name,`player-${id}`);assert.equal(model.userData.jerseyNumber,id%11+1);
-    assert.equal(model.userData.limbs.length,2);const height=new THREE.Box3().setFromObject(model).max.y;assert.ok(height>1.8&&height<2.05);
+    assert.equal(model.userData.limbs.length,2);assert.ok(model.userData.limbs.every(limb=>limb.foot));const height=new THREE.Box3().setFromObject(model).max.y;assert.ok(height>1.8&&height<2.05);
   }
 });
 test('broadcast camera includes the controlled player and ball with a stable minimum distance',()=>{
@@ -23,6 +23,7 @@ test('3D models map pitch coordinates, face movement and animate without mutatin
   const model=createPlayerModel(player);updatePlayerModel(model,player,1000);
   assert.equal(model.position.x,10);assert.equal(model.position.z,-5);assert.ok(Math.abs(model.rotation.y-Math.PI/2)<1e-9);
   assert.notEqual(model.userData.limbs[0].leg.rotation.x,0);assert.equal(JSON.stringify(player),before);
+  assert.notEqual(model.userData.limbs[0].knee.rotation.x,0);assert.notEqual(model.userData.limbs[0].foot.rotation.x,0);
   const moving=Math.abs(model.userData.limbs[0].leg.rotation.x);updatePlayerModel(model,{...player,vx:0},1100);
   assert.ok(Math.abs(model.userData.limbs[0].leg.rotation.x)<moving);
   const arm=model.userData.limbs[0].arm,restingArm=Math.abs(arm.rotation.z);updatePlayerModel(model,{...player,vx:0,motion:'block',motionTime:.17},1150);assert.ok(Math.abs(arm.rotation.z)>restingArm);

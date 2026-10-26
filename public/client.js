@@ -92,7 +92,7 @@ function draw(now){const active=game.players[game.selected[team]];if(view3D&&req
     ctx.font='bold 8px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#142b30';ctx.fillText(p.n,0,1);
     if(selected){ctx.fillStyle='#10251c';ctx.fillRect(-13,19,26,3);ctx.fillStyle='#d5f581';ctx.fillRect(-13,19,26*p.stamina,3);}ctx.restore();
   }
-  const b=game.ball;circle(ox+b.x+2,oy+b.y+3,5,'#001b1955');circle(ox+b.x,oy+b.y,4.5,'#faf9e8','#182d2c',1.1);circle(ox+b.x+.6,oy+b.y-.4,1.5,'#405249');ctx.globalAlpha=1;
+  const b=game.ball;circle(ox+b.x+1.5,oy+b.y+2,3.7,'#001b1955');circle(ox+b.x,oy+b.y,3.2,'#faf9e8','#182d2c',.9);circle(ox+b.x+.4,oy+b.y-.3,1,'#405249');ctx.globalAlpha=1;
   if(chargeStart&&mode!=='lobby'&&active){const power=Math.min(1,(now-chargeStart)/900);ctx.fillStyle='#10211d';ctx.fillRect(ox+active.x-25,oy+active.y-38,50,5);ctx.fillStyle=power>.8?'#ff836b':'#d5f581';ctx.fillRect(ox+active.x-25,oy+active.y-38,50*power,5);}
   }
   drawRadar();

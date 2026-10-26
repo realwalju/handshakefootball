@@ -10,9 +10,9 @@ A playable soccer prototype: two human rivals, each controlling a full team of e
 
 Players accelerate, brake, and turn with momentum. Off the ball, they make individual decisions: midfielders show for a pass, forwards alternate channel runs and dropping short, wingers hold width or cut inside, and a fullback can overlap on the ball side. The defending team commits a presser, keeps cover behind them, and tracks runners instead of sending everyone toward the ball.
 
-After a pass, you keep control of the passer while the intended receiver independently attacks the ball. Control transfers on the receiver's first touch, or to an opponent who intercepts it. Passing targets account for space and blocked lanes. When an AI defender wins possession, control transfers to that player; goalkeepers settle and distribute the ball automatically. Quick passes are available after a ball win while repeated tackles still need recovery time.
+After a pass, you keep control of the passer while the intended receiver independently attacks the ball. Control transfers on the receiver's first touch, or to an opponent who intercepts it. Passing targets account for space and blocked lanes, with a small intended-receiver control margin for near-perfect passes. When an AI defender wins possession, control transfers to that player. Human goalkeepers are selected and controllable in possession; computer-controlled keepers distribute automatically. Quick passes are available after a ball win while repeated tackles still need recovery time.
 
-The 3D gait follows actual travel speed, with separate stride phases, bent knees/elbows, and easing in and out of motion. A short visual extrapolation smooths online snapshots without changing authoritative match state. These are prototype football behaviors, not a professional simulation; feel and team balance still need playtesting.
+The 3D gait follows actual travel speed, with opposing stride phases, knee flexion, planted-foot rotation, arm counter-swing, acceleration lean, turning lean, and easing in and out of motion. A short visual extrapolation smooths online snapshots without changing authoritative match state. These are prototype football behaviors, not a professional simulation; feel and team balance still need playtesting.
 
 ## Run the multiplayer game
 
@@ -27,7 +27,7 @@ Open http://localhost:3000, or http://localhost:3000/?view=3d for the 3D experim
 
 ## Basic 3D experiment
 
-The 3D view uses Three.js, served from this project, with simple articulated footballers, team kits and jersey numbers, a faceted ball, goals and nets, pitch markings, lighting, and shadows. Player movement drives a basic running animation. The lime selection marker, aiming arrow, stamina bar, and shot charge remain visible in 3D.
+The 3D view uses Three.js, served from this project, with articulated footballers, team kits and jersey numbers, a proportionally smaller faceted ball, goals and nets, pitch markings, lighting, and shadows. Player movement drives a speed- and acceleration-aware running animation. The lime selection marker, aiming arrow, stamina bar, and shot charge remain visible in 3D.
 
 This is a visual experiment using the existing shared match simulation. The ball and players still move on a flat pitch; there is no aerial physics. Camera orientation stays aligned with the pitch so WASD/arrows, passing, shooting, and switching retain their controls. Each opponent can choose either view, and copied invites preserve the 3D option. Browsers that cannot start WebGL2 keep the 2D view.
 
@@ -53,13 +53,13 @@ Open `touchline-duel-demo.html` directly in a browser. This self-contained demo 
 | Switch defender | Q | LB / L1 |
 | Tackle | E | B / ○ |
 
-Phone controls appear automatically on touch devices. Aim with movement. When standing still, shots aim toward the center of the opponent's goal. Your selected player has a lime ring; the small bar is sprint stamina. Goalkeepers distribute possession automatically.
+Phone controls appear automatically on touch devices. Passes aim with movement. For shots, up/down selects a part of the goal and neutral input aims centrally. Your selected player has a lime ring; the small bar is sprint stamina. Goalkeepers become controllable when they secure possession.
 
 ## Current scope
 
 - Two teams of eleven, one human per team; separate computer-opponent warm-up.
 - Shared simulation at 30 steps/second; local snapshots stream at 30 updates/second. On Vercel, clients synchronize at up to 20 updates/second, depending on network latency.
-- Directional passing, through balls, charged shots, tackling, interceptions, simple supporting movement, and automated goalkeepers.
+- Directional passing, through balls, goal-relative charged shots, tackling, interceptions, simple supporting movement, and controllable goalkeepers in possession.
 - Three-minute matches, scoring, kickoffs, simplified throw-ins/corners/goal kicks, and mutual online rematch votes.
 - Room codes, invite links, automatic reconnect to the same seat, and match pause on disconnect.
 - Original fictional teams and procedurally built 2D/3D visuals; no downloaded player artwork. Three.js supplies the 3D renderer and esbuild bundles the browser asset.
@@ -109,7 +109,7 @@ npm ci
 npm test
 ```
 
-The 36-test automated suite covers team composition and role traits, possession restrictions, pass-completion and interception handoffs, readable pass and through-ball speed, controller input, directional wall/forward/recycle options, first-touch buffering, loose-ball tackles, parries and recovery, goals, restarts, keeper distribution, full-match numerical stability, two-player room authentication/synchronization/disconnect/rematch, cross-instance room updates, the polling client, articulated 3D models and animation, broadcast and full-pitch camera framing, a 2D fallback without WebGL, acceleration/braking, coordinated support options, defensive cover, receiving runs, and deterministic movement. See [the eFootball pacing study](docs/gameplay-analysis.md) for the measured problems, reference principles, current calibration, and known limits. A separate real-database integration check is available after the Neon integration is connected:
+The 40-test automated suite covers team composition and role traits, possession restrictions, pass-completion and interception handoffs, intended-receiver control tolerance, readable pass and through-ball speed, goal-relative shooting and scoring, human and computer goalkeeper possession, controller input, directional wall/forward/recycle options, first-touch buffering, loose-ball tackles, parries and recovery, goals, restarts, full-match numerical stability, two-player room authentication/synchronization/disconnect/rematch, cross-instance room updates, the polling client, articulated 3D models and animation, ball scale, broadcast and full-pitch camera framing, a 2D fallback without WebGL, acceleration/braking, coordinated support options, defensive cover, receiving runs, and deterministic movement. See [the eFootball pacing study](docs/gameplay-analysis.md) for the measured problems, reference principles, current calibration, and known limits. A separate real-database integration check is available after the Neon integration is connected:
 
 ```sh
 npx vercel env pull .env.local

@@ -7,7 +7,7 @@ const solid=color=>new THREE.MeshStandardMaterial({color,roughness:.9,flatShadin
 const white=solid(0xf0f1dd),dark=solid(0x203039);
 const shapes={
   body:new THREE.CapsuleGeometry(.43,.72,3,8),head:new THREE.SphereGeometry(.32,8,6),
-  boot:new THREE.BoxGeometry(.28,.17,.48),
+  boot:new THREE.BoxGeometry(.26,.14,.44),hand:new THREE.SphereGeometry(.13,7,5),
   upper:new THREE.CylinderGeometry(.135,.12,.4,6),lower:new THREE.CylinderGeometry(.12,.1,.37,6),
   shorts:new THREE.BoxGeometry(.75,.4,.54),hair:new THREE.SphereGeometry(.335,8,4,0,Math.PI*2,0,Math.PI/2)
 };
@@ -30,11 +30,11 @@ export function createPlayerModel(player){
   for(const side of [-1,1]){
     const arm=new THREE.Group();arm.position.set(side*.54,1.93,0);body.add(arm);
     mesh(shapes.upper,shirt,arm,0,-.2);arm.rotation.z=side*.12;
-    const elbow=new THREE.Group();elbow.position.y=-.4;arm.add(elbow);mesh(shapes.lower,skin,elbow,0,-.18);
+    const elbow=new THREE.Group();elbow.position.y=-.4;arm.add(elbow);mesh(shapes.lower,skin,elbow,0,-.18);mesh(shapes.hand,skin,elbow,0,-.42);
     const leg=new THREE.Group();leg.position.set(side*.22,.8,0);root.add(leg);
     mesh(shapes.upper,dark,leg,0,-.2);const knee=new THREE.Group();knee.position.y=-.4;leg.add(knee);
-    mesh(shapes.lower,white,knee,0,-.18);mesh(shapes.boot,dark,knee,0,-.33,.11);
-    limbs.push({arm,leg,side,knee,elbow});
+    mesh(shapes.lower,white,knee,0,-.18);const foot=mesh(shapes.boot,dark,knee,0,-.36,.13);
+    limbs.push({arm,leg,side,knee,elbow,foot});
   }
   const shadow=mesh(new THREE.CircleGeometry(.88,16),new THREE.MeshBasicMaterial({color:0x071d22,transparent:true,opacity:.2,depthWrite:false}),root,0,.045);
   shadow.rotation.x=-Math.PI/2;
@@ -50,19 +50,23 @@ export function updatePlayerModel(model,player,now,dt=1/60,interpolate=false,pre
   else{model.position.x+=(x-model.position.x)*blend;model.position.z+=(z-model.position.z)*blend;}
   const direction=Math.atan2(player.fx,player.fy),delta=direction-model.rotation.y;
   const turn=Math.atan2(Math.sin(delta),Math.cos(delta));model.rotation.y+=turn*(1-Math.exp(-14*dt));
-  const speed=Math.hypot(player.vx,player.vy),targetStride=Math.min(speed/65,1.35);
+  const speed=Math.hypot(player.vx,player.vy),targetStride=Math.min(speed/72,1.18);
   model.userData.moveBlend+=(targetStride-model.userData.moveBlend)*(1-Math.exp(-10*dt));
   model.userData.gaitPhase+=speed/(30+player.id%5)*Math.PI*2*dt;
   const phase=model.userData.gaitPhase,stride=model.userData.moveBlend,body=model.userData.body,acceleration=(speed-model.userData.lastSpeed)/Math.max(dt,1/240);model.userData.lastSpeed=speed;
-  body.position.y=Math.abs(Math.sin(phase))*.055*stride;body.position.x=Math.sin(phase)*.025*stride;
-  body.rotation.x=.09*stride+THREE.MathUtils.clamp(acceleration/900,-.07,.1);body.rotation.y=THREE.MathUtils.clamp(turn,-.5,.5)*.35*stride;
-  for(const {arm,leg,side,knee,elbow} of model.userData.limbs){
-    const swing=Math.sin(phase)*side;leg.rotation.x=swing*.55*stride;arm.rotation.x=-swing*.42*stride;
-    arm.rotation.z=side*.12;knee.rotation.x=Math.max(0,-swing)*.75*stride;elbow.rotation.x=-.5*stride;
+  const breathing=Math.sin(now*.0018+player.id)*.008*(1-Math.min(1,stride));
+  body.position.y=Math.abs(Math.cos(phase))*.045*stride+breathing;body.position.x=Math.sin(phase)*.018*stride;
+  body.rotation.x=.065*stride+THREE.MathUtils.clamp(acceleration/950,-.065,.09);body.rotation.y=THREE.MathUtils.clamp(turn,-.5,.5)*.3*stride;body.rotation.z=-Math.sin(phase)*.018*stride;
+  for(const {arm,leg,side,knee,elbow,foot} of model.userData.limbs){
+    const swing=Math.sin(phase+(side>0?0:Math.PI));
+    leg.rotation.x=swing*.58*stride;leg.position.y=.8+Math.max(0,-swing)*.035*stride;
+    arm.rotation.x=-swing*.46*stride;arm.rotation.z=side*(.12+.025*stride);
+    knee.rotation.x=(Math.max(0,-swing)*.72+Math.max(0,Math.cos(phase+(side>0?0:Math.PI)))*.18)*stride;
+    elbow.rotation.x=-.22-.3*Math.max(0,swing)*stride;foot.rotation.x=-leg.rotation.x*.2-knee.rotation.x*.24;
     if(player.motionTime>0&&side===1){
       const duration=player.motion==='kick'?.32:player.motion==='tackle'?.4:.38;
       const motion=Math.sin(Math.min(1,player.motionTime/duration)*Math.PI);
-      leg.rotation.x-=motion*(player.motion==='kick'?.9:player.motion==='touch'?.35:.48);knee.rotation.x+=motion*.25;
+      leg.rotation.x-=motion*(player.motion==='kick'?1.02:player.motion==='touch'?.42:.52);knee.rotation.x+=motion*.28;foot.rotation.x-=motion*.18;
     }
     if(player.motionTime>0&&player.motion==='block'){
       const motion=Math.sin(Math.min(1,player.motionTime/.34)*Math.PI);
@@ -155,11 +159,11 @@ export function createWorld(){
     }
   }
   const players=new Map();for(let id=0;id<22;id++){const model=createPlayerModel({id,team:Math.floor(id/11),n:id%11+1});players.set(id,model);scene.add(model);}
-  const ballGeometry=new THREE.IcosahedronGeometry(.55,1),colors=[],color=new THREE.Color();
+  const ballGeometry=new THREE.IcosahedronGeometry(.3,1),colors=[],color=new THREE.Color();
   for(let n=0;n<ballGeometry.attributes.position.count;n++){color.setHex(Math.floor(n/3)%5===0?0x24343a:0xf4f2e3);colors.push(color.r,color.g,color.b);}
   ballGeometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
-  const ball=mesh(ballGeometry,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.8,flatShading:true}),scene,0,.58);ball.castShadow=true;ball.name='match-ball';
-  const ballShadow=mesh(new THREE.CircleGeometry(.64,16),new THREE.MeshBasicMaterial({color:0x071d22,transparent:true,opacity:.3,depthWrite:false}),scene,0,.06);ballShadow.rotation.x=-Math.PI/2;
+  const ball=mesh(ballGeometry,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.8,flatShading:true}),scene,0,.31);ball.castShadow=true;ball.name='match-ball';
+  const ballShadow=mesh(new THREE.CircleGeometry(.38,16),new THREE.MeshBasicMaterial({color:0x071d22,transparent:true,opacity:.3,depthWrite:false}),scene,0,.06);ballShadow.rotation.x=-Math.PI/2;
   const selected=selection(0xd5f581),opponent=selection(0xd6e2e5);opponent.userData.pointer.visible=false;scene.add(selected,opponent);
   const receiver=selection(0xffd986);receiver.userData.pointer.visible=false;scene.add(receiver);
   const energy=new THREE.Group();mesh(new THREE.BoxGeometry(2.2,.12,.1),dark,energy);
@@ -215,9 +219,9 @@ export function create3DView(canvas,onUnavailable=()=>{}){
       world.charge.visible=!!chargeStart&&mode!=='lobby';world.charge.position.copy(active.position);world.charge.position.y=4.15;
       const power=Math.min(1,Math.max(0,(now-chargeStart)/900));world.chargeFill.scale.x=Math.max(.01,power);world.chargeFill.position.x=-(1-power)*1.45;
       const bx=(game.ball.x+game.ball.vx*prediction-W/2)*SCALE,bz=(game.ball.y+game.ball.vy*prediction-H/2)*SCALE,blend=mode==='online'?1-Math.exp(-25*dt):1;
-      if(Math.hypot(world.ball.position.x-bx,world.ball.position.z-bz)>12)world.ball.position.set(bx,.58,bz);
+      if(Math.hypot(world.ball.position.x-bx,world.ball.position.z-bz)>12)world.ball.position.set(bx,.31,bz);
       else{world.ball.position.x+=(bx-world.ball.position.x)*blend;world.ball.position.z+=(bz-world.ball.position.z)*blend;}
-      world.ball.rotation.z-=game.ball.vx*SCALE*dt/.55;world.ball.rotation.x+=game.ball.vy*SCALE*dt/.55;
+      world.ball.rotation.z-=game.ball.vx*SCALE*dt/.3;world.ball.rotation.x+=game.ball.vy*SCALE*dt/.3;
       world.ballShadow.position.set(world.ball.position.x,.06,world.ball.position.z);
       world.receiver.visible=mode!=='lobby'&&!!game.pass;
       if(game.pass){world.receiver.position.set((game.pass.x-W/2)*SCALE,.02,(game.pass.y-H/2)*SCALE);world.receiver.scale.setScalar(.7);}
