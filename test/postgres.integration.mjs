@@ -19,8 +19,18 @@ test('real Postgres serializes two independent players without losing state',asy
     const before=(await storeA.read(host.room,Date.now())).room.game.players[9].x;
     await wait(100);const packets=await Promise.all([a('sync',{x:1},host),b('sync',{x:-1},guest)]);
     assert.ok(packets.every(p=>p.status==='connected'));assert.ok(packets.some(p=>p.game.players[9].x>before));
-    await a('action',{kind:'pass',x:1,y:0},host);const next=await b('sync',{},guest);
-    assert.notEqual(next.game.selected[0],9);assert.equal(next.game.players.length,22);
+    // Establish possession for the pass check: real request latency lets supporting
+    // defenders move, so an uncontrolled match is not a deterministic pass fixture.
+    const fixture=await storeA.read(host.room,Date.now()),game=fixture.room.game,carrier=game.selected[0];
+    game.ball.owner=carrier;game.ball.lock=0;game.players[carrier].cool=0;
+    game.players[carrier].x=500;game.players[carrier].y=340;game.players[carrier].fx=1;game.players[carrier].fy=0;
+    for(const player of game.players)if(player.team===1){player.x=900;player.y=600;}
+    for(const player of fixture.room.members){player.input={};player.inputAt=player.seen=Date.now();}
+    fixture.room.lastTick=Date.now();
+    assert.equal(await storeA.compareAndSet(host.room,fixture.version,fixture.room,Date.now()),true);
+    await a('action',{kind:'pass',x:1,y:0},host);
+    assert.notEqual((await storeA.read(host.room,Date.now())).room.game.selected[0],carrier);
+    const next=await b('sync',{},guest);assert.equal(next.game.players.length,22);
     assert.ok(!JSON.stringify(next).includes(host.token));assert.ok(!JSON.stringify(next).includes(guest.token));
     await a('leave',{},host);assert.equal((await b('sync',{},guest)).status,'paused');
   }finally{
