@@ -2,6 +2,8 @@
 
 [Play at soccer.walju.net](https://soccer.walju.net) · [Vercel fallback URL](https://touchline-duel.vercel.app)
 
+[Try the basic 3D version](https://soccer.walju.net/?view=3d). Use **Try 3D** above the pitch to switch views during warm-up or an online match. The **Camera** button switches between a full-pitch view and a closer camera following the ball. **2D** switches back without restarting the match.
+
 A first playable soccer prototype: two human rivals, each controlling a full team of eleven. Passes switch control to their intended receiver; the remaining footballers maintain a simple 4–4–2 shape.
 
 ## Run the multiplayer game
@@ -13,7 +15,15 @@ npm ci
 npm start
 ```
 
-Open http://localhost:3000. The local server uses Node's built-in modules; the Neon dependency supports Vercel's shared room storage.
+Open http://localhost:3000, or http://localhost:3000/?view=3d for the 3D experiment. `npm start` first bundles the 3D renderer; the local HTTP server uses Node's built-in modules. The Neon dependency supports Vercel's shared room storage.
+
+## Basic 3D experiment
+
+The 3D view uses Three.js, served from this project, with simple articulated footballers, team kits and jersey numbers, a faceted ball, goals and nets, pitch markings, lighting, and shadows. Player movement drives a basic running animation. The lime selection marker, aiming arrow, stamina bar, and shot charge remain visible in 3D.
+
+This is a visual experiment using the existing shared match simulation. The ball and players still move on a flat pitch; there is no aerial physics. Camera orientation stays aligned with the pitch so WASD/arrows, passing, shooting, and switching retain their controls. Each opponent can choose either view, and copied invites preserve the 3D option. Browsers that cannot start WebGL2 keep the 2D view.
+
+The editable models and scene are in `src/view-3d.js`. `npm run build:assets` bundles them into `public/view-3d.js`; that generated file is ignored by Git and rebuilt locally, in CI, and on Vercel. The single-file downloaded warm-up remains 2D. Three.js's license ships as `/three-LICENSE.txt`.
 
 For a first test, open the page in two separate browser profiles or browsers. Create a match in one and enter its six-character code in the other. Each browser tab has its own player session; reloading a tab reconnects to that seat. Both players must remain connected for the clock to run.
 
@@ -44,7 +54,7 @@ Phone controls appear automatically on touch devices. Aim with movement. When st
 - Directional passing, through balls, charged shots, tackling, interceptions, simple supporting movement, and automated goalkeepers.
 - Three-minute matches, scoring, kickoffs, simplified throw-ins/corners/goal kicks, and mutual online rematch votes.
 - Room codes, invite links, automatic reconnect to the same seat, and match pause on disconnect.
-- Original fictional teams and a canvas pitch, with no third-party artwork or external dependencies.
+- Original fictional teams and procedurally built 2D/3D visuals; no downloaded player artwork. Three.js supplies the 3D renderer and esbuild bundles the browser asset.
 
 This is a prototype, not a finished simulation. There is no offside, foul system, aerial ball physics, substitutions, gamepad support, account system, or skill-based matchmaking. Players' tactical behavior is intentionally basic. The first build prioritizes a complete match loop and a working two-device architecture; gameplay tuning and testing over real internet connections remain necessary.
 
@@ -91,7 +101,7 @@ npm ci
 npm test
 ```
 
-The 19-test automated suite covers team composition, possession restrictions, pass/control transfer, fast-shot interception, goals, restarts, keeper distribution, full-match numerical stability, two-player room authentication/synchronization/disconnect/rematch, cross-instance room updates, concurrent joins, and the polling client. A separate real-database integration check is available after the Neon integration is connected:
+The 22-test automated suite covers team composition, possession restrictions, pass/control transfer, fast-shot interception, goals, restarts, keeper distribution, full-match numerical stability, two-player room authentication/synchronization/disconnect/rematch, cross-instance room updates, the polling client, 3D models and animation, camera framing, and a 2D fallback without WebGL. A separate real-database integration check is available after the Neon integration is connected:
 
 ```sh
 npx vercel env pull .env.local

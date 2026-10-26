@@ -3,6 +3,12 @@ const $=id=>document.getElementById(id),canvas=$('pitch'),ctx=canvas.getContext(
 const COLORS=['#ff836b','#8acbea'];let game=createGame(),mode='lobby',team=0,session=null,stream=null,connected=false,onlineStatus='waiting',lastPacket=0,lastTime=0,accumulator=0,chargeStart=0,noticeUntil=0,lastMessage='',inputBusy=false;
 const keys=new Set(),touch={x:0,y:0,sprint:false},renderPositions=new Map();
 let input={x:0,y:0,sprint:false};const ox=75,oy=60;canvas.width=2400;canvas.height=1600;ctx.scale(2,2);
+let requestedView='2d',view3D=null,loading3D=null,cameraMode='wide';
+function updateViewUI(){const active=!!view3D&&requestedView==='3d';canvas.hidden=active;$('pitch3d').hidden=!active;$('view2dButton').ariaPressed=String(!active);$('view3dButton').ariaPressed=String(active);$('cameraButton').hidden=!active;$('viewHint').textContent=active?'3D prototype · same controls':'Try a new angle. Same match, same controls.';}
+function unavailable3D(){requestedView='2d';$('view3dButton').disabled=true;updateViewUI();$('viewHint').textContent='3D could not start in this browser. You can keep playing in 2D.';}
+async function chooseView(value){requestedView=value;if(value==='2d'){updateViewUI();return;}if(typeof WebGL2RenderingContext==='undefined'){unavailable3D();return;}if(!view3D){$('viewHint').textContent='Getting the 3D pitch ready…';try{loading3D??=import('./view-3d.js').then(module=>module.create3DView($('pitch3d'),unavailable3D));view3D=await loading3D;}catch{unavailable3D();return;}}updateViewUI();}
+$('view2dButton').onclick=()=>chooseView('2d');$('view3dButton').onclick=()=>chooseView('3d');
+$('cameraButton').onclick=()=>{cameraMode=cameraMode==='wide'?'follow':'wide';view3D?.setCameraMode(cameraMode);$('cameraButton').textContent='Camera: '+(cameraMode==='wide'?'wide':'follow ball');$('cameraButton').ariaPressed=String(cameraMode==='follow');};
 let transport='sse',networkError=null;
 async function configureNetwork(){const r=await fetch('/api/config');const data=await r.json();if(!r.ok)throw new Error(data.error||'Connection failed');transport=data.transport==='poll'?'poll':'sse';networkError=null;}
 const networkReady=location.protocol==='file:'?Promise.resolve():configureNetwork().catch(e=>{networkError=e;});
@@ -28,7 +34,7 @@ async function startRoom(join=false){$('error').textContent='';if(location.proto
 function leave(showLobby=true){if(stream){stream.close();stream=null;}if(session){api('/api/leave').catch(()=>{});session=null;}try{sessionStorage.removeItem('touchline-session');}catch{}mode='lobby';connected=false;clearInput();if(showLobby){game=createGame();renderPositions.clear();$('lobby').hidden=false;$('roomBanner').hidden=true;$('leaveButton').hidden=true;$('rematchButton').hidden=true;$('matchNotice').hidden=true;uiStatus('READY TO PLAY');}}
 $('createButton').onclick=()=>startRoom();$('joinForm').onsubmit=e=>{e.preventDefault();startRoom(true);};$('practiceButton').onclick=enterPractice;$('leaveButton').onclick=()=>leave();
 $('rematchButton').onclick=()=>{if(mode==='practice'){game=createGame();game.bot=[false,true];$('rematchButton').hidden=true;}else api('/api/rematch').catch(e=>notify(e.message));};
-$('copyButton').onclick=async()=>{const link=new URL(location.href);link.search='';link.searchParams.set('room',session.room);try{await navigator.clipboard.writeText(link.href);$('copyButton').textContent='Invite copied ✓';setTimeout(()=>$('copyButton').textContent='Copy invite ↗',2000);}catch{notify(`Share room code: ${session.room}`);}};
+$('copyButton').onclick=async()=>{const link=new URL(location.href);link.search='';link.searchParams.set('room',session.room);if(requestedView==='3d')link.searchParams.set('view','3d');try{await navigator.clipboard.writeText(link.href);$('copyButton').textContent='Invite copied ✓';setTimeout(()=>$('copyButton').textContent='Copy invite ↗',2000);}catch{notify(`Share room code: ${session.room}`);}};
 $('helpButton').onclick=()=>{clearInput();$('help').showModal();};$('closeHelp').onclick=()=>$('help').close();
 document.querySelector('.brand').onclick=e=>{e.preventDefault();if(mode==='lobby')window.scrollTo({top:0,behavior:'smooth'});else notify('Use Leave match to return to the lobby.');};
 addEventListener('keydown',e=>{if(e.target.matches('input')||$('help').open)return;const k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' ','shift'].includes(k))e.preventDefault();keys.add(k);input=readInput();if(e.repeat)return;const map={j:'pass',l:'through',q:'switch',e:'tackle'};if(map[k])sendAction(map[k]);if(k==='k'&&mode!=='lobby')chargeStart=performance.now();});
@@ -55,7 +61,7 @@ function pitch(){
   for(const x of [0,W]){const gx=x===0?-24:W;ctx.fillStyle='#b5c3b516';ctx.fillRect(gx,265,24,150);ctx.strokeStyle='#dae3d6aa';ctx.strokeRect(gx,265,24,150);for(let y=270;y<415;y+=10)line(gx,y,gx+24,y,'#dce9dd22',.7);for(let z=6;z<24;z+=6)line(gx+z,265,gx+z,415,'#dce9dd22',.7);}
   ctx.restore();ctx.fillStyle='#a6bd9644';ctx.textAlign='left';ctx.font='8px Arial';ctx.fillText('CORAL FC   →',ox,oy+H+43);ctx.textAlign='right';ctx.fillText('←   SKY UNITED',ox+W,oy+H+43);
 }
-function draw(now){pitch();const active=game.players[game.selected[team]];const fade=mode==='lobby'?.65:1;ctx.globalAlpha=fade;
+function draw(now){const active=game.players[game.selected[team]];if(view3D&&requestedView==='3d'){try{view3D.render(game,{team,mode,input,chargeStart,now});}catch{unavailable3D();}}if(!(view3D&&requestedView==='3d')){pitch();const fade=mode==='lobby'?.65:1;ctx.globalAlpha=fade;
   // Directional pass hint; only visible for the current ball carrier.
   if(mode!=='lobby'&&game.ball.owner===active?.id){const d=Math.hypot(input.x,input.y)||1,dx=input.x||(!input.y?active.fx:0),dy=input.y||(!input.x?active.fy:0);ctx.setLineDash([5,6]);line(ox+active.x,oy+active.y,ox+active.x+dx/d*65,oy+active.y+dy/d*65,'#d5f58188',1);ctx.setLineDash([]);}
   for(const p of [...game.players].sort((a,b)=>a.y-b.y)){
@@ -68,6 +74,7 @@ function draw(now){pitch();const active=game.players[game.selected[team]];const 
   }
   const b=game.ball;circle(ox+b.x+2,oy+b.y+3,5,'#001b1955');circle(ox+b.x,oy+b.y,4.5,'#faf9e8','#182d2c',1.1);circle(ox+b.x+.6,oy+b.y-.4,1.5,'#405249');ctx.globalAlpha=1;
   if(chargeStart&&mode!=='lobby'&&active){const power=Math.min(1,(now-chargeStart)/900);ctx.fillStyle='#10211d';ctx.fillRect(ox+active.x-25,oy+active.y-38,50,5);ctx.fillStyle=power>.8?'#ff836b':'#d5f581';ctx.fillRect(ox+active.x-25,oy+active.y-38,50*power,5);}
+  }
   $('scoreA').textContent=game.score[0];$('scoreB').textContent=game.score[1];const seconds=Math.ceil(game.clock);$('clock').textContent=`${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;
   if(mode!=='lobby'){
     $('playerLabel').innerHTML=`<i class="selected-icon"></i> ${team===0?'CORAL':'SKY'} · #${active.n} ${active.role}`;
@@ -80,4 +87,5 @@ function draw(now){pitch();const active=game.players[game.selected[team]];const 
 function frame(now){const elapsed=Math.min((now-lastTime)/1000,.1);lastTime=now;input=readInput();if(mode==='practice'){accumulator+=elapsed;let n=0;while(accumulator>=1/60&&n++<6){step(game,[input,{}],1/60);accumulator-=1/60;}}else accumulator=0;if(mode==='online'&&connected&&now-lastPacket>3000){connected=false;uiStatus('RECONNECTING');}draw(now);requestAnimationFrame(frame);}
 const room=new URLSearchParams(location.search).get('room');if(room)$('roomInput').value=room.slice(0,6).toUpperCase();
 try{const s=JSON.parse(sessionStorage.getItem('touchline-session'));if(s?.token&&s.room&&location.protocol!=='file:')networkReady.then(()=>{if(!networkError)connect(s);else $('error').textContent=networkError.message;});}catch{}
+updateViewUI();if(new URLSearchParams(location.search).get('view')==='3d')chooseView('3d');
 requestAnimationFrame(frame);

@@ -3,7 +3,8 @@
 ## Current verification (October 25, 2026)
 
 - Imported the complete project from `handshakefootball.bundle` and preserved it locally.
-- All 19 automated tests pass on Windows with Node.js 24.22.1.
+- All 22 automated tests pass on Windows with Node.js 24.22.1, including 3D model/animation and full-pitch camera framing checks.
+- The basic 3D view was visually checked in Chrome on the local preview: full-pitch and follow-ball cameras, animated players, defender switching, and a warm-up reaching full time. Switching back to 2D retained the same clock, score, and match state. Phone/GPU performance and two physical devices still need a hands-on comparison.
 - Fixed a Windows line-ending assumption in the client test harness.
 - Verified both teams can switch defenders and transfer control with through balls.
 - Rejected malformed action directions before they can corrupt shared game state; invalid JSON payload shapes and oversized room-creation requests return client errors.
@@ -26,6 +27,10 @@
 5. Reload one browser. It should return to the same team; the opponent should see a brief pause, then play should resume. Briefly take one device offline and verify the other pauses; restore its connection with the original tab still open to reconnect.
 6. Finish the three-minute match. One rematch vote should wait; the second should reset score and clock. Leave and create a new room for another opponent.
 7. On a phone, repeat moving, passing, switching, sprinting, and charging a shot. Check portrait and landscape, including whether controls fit and the selection ring is easy to see.
+
+## Basic 3D comparison
+
+Open https://soccer.walju.net/?view=3d or select **Try 3D** above the pitch. Start warm-up, then compare **Camera: wide** with **Camera: follow ball**. Check the animated players, ball visibility, selection marker, stamina, and shot charge. Pass with J, switch with Q, and try a charged shot with K. Switch back to **2D** during play; score, clock, and session should continue. For online play, let one rival use 3D and the other use 2D, then compare their score and selected players. Test phone performance separately.
 
 For same-computer testing, open two independently created tabs or different browsers. Avoid duplicating an existing match tab: browsers can copy its saved player session.
 

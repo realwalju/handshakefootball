@@ -8,3 +8,5 @@ coverage/
 Thumbs.db
 *.bundle
 .vercel/
+/public/view-3d.js
+/public/three-LICENSE.txt

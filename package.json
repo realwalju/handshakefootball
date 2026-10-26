@@ -5,14 +5,20 @@
   "type": "module",
   "description": "Two humans, two teams of eleven. A browser soccer prototype.",
   "scripts": {
+    "prestart": "npm run build:assets",
     "start": "node server.mjs",
-    "test": "node --test test/*.test.mjs",
+    "build:assets": "node scripts/build-assets.mjs",
+    "test": "npm run build:assets && node --test test/*.test.mjs",
     "build": "node scripts/setup-storage.mjs && npm test"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.2.0"
+    "@neondatabase/serverless": "^1.2.0",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }

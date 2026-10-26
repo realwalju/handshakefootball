@@ -26,7 +26,7 @@ test('deployment health and static routes work without exposing project files',a
  const {server}=createServer();await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`;
  try{
   const health=await fetch(`${base}/health`);assert.equal(health.status,200);assert.deepEqual(await health.json(),{ok:true});
-  for(const path of ['/','/client.js','/engine.js','/style.css']){const res=await fetch(base+path);assert.equal(res.status,200);assert.ok((await res.text()).length>100);}
+  for(const path of ['/','/client.js','/engine.js','/style.css','/view-3d.js','/three-LICENSE.txt']){const res=await fetch(base+path);assert.equal(res.status,200);assert.ok((await res.text()).length>100);}
   for(const path of ['/.git/config','/server.mjs','/package.json'])assert.equal((await fetch(base+path)).status,404);
  }finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
 });

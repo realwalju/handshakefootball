@@ -40,10 +40,10 @@ async function post(operation,data={},session){
   }
 }
 test('production game and storage health are publicly accessible without a login',async()=>{
-  const home=await request('/');assert.equal(home.status,200);assert.match(home.text,/<title>Touchline Duel/);
+  const home=await request('/');assert.equal(home.status,200);assert.match(home.text,/<title>Touchline Duel/);assert.match(home.text,/id="pitch3d"/);
   assert.equal((await request('/health')).json().ok,true);
   assert.equal((await request('/api/config')).json().transport,'poll');
-  for(const path of ['/client.js','/engine.js','/style.css'])assert.equal((await request(path)).status,200);
+  for(const path of ['/client.js','/engine.js','/style.css','/view-3d.js','/three-LICENSE.txt'])assert.equal((await request(path)).status,200);
   assert.equal((await request('/.env.local')).status,404);
 });
 test('published two-player match supports movement, passing, switching, reconnect, full time and rematch',{timeout:270000},async()=>{

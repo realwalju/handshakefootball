@@ -41,9 +41,9 @@ export function createServer(){
       }
       if(req.method==='GET'&&url.pathname==='/health')return json(res,200,{ok:true});
       if(req.method==='GET'&&url.pathname==='/api/config')return json(res,200,{transport:'sse'});
-      const allowed={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/client.js':'client.js','/engine.js':'engine.js'};
+      const allowed={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/client.js':'client.js','/engine.js':'engine.js','/view-3d.js':'view-3d.js','/three-LICENSE.txt':'three-LICENSE.txt'};
       const name=allowed[url.pathname];if(req.method!=='GET'||!name)throw fail(404,'Not found');
-      const data=await readFile(new URL(name,root));res.writeHead(200,{'Content-Type':name.endsWith('.html')?'text/html; charset=utf-8':name.endsWith('.css')?'text/css':'text/javascript','Cache-Control':'no-cache','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'});res.end(data);
+      const data=await readFile(new URL(name,root));res.writeHead(200,{'Content-Type':name.endsWith('.html')?'text/html; charset=utf-8':name.endsWith('.css')?'text/css':name.endsWith('.js')?'text/javascript':'text/plain; charset=utf-8','Cache-Control':'no-cache','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'});res.end(data);
     }catch(e){if(!res.headersSent)json(res,e.status||500,{error:e.status?e.message:'Something went wrong. Please try again.'});else res.end();}
   });
   const timer=setInterval(()=>{const now=Date.now();for(const [code,r] of rooms){if(!r.members.some(m=>m?.stream)&&now-r.touched>20*60*1000){rooms.delete(code);continue;}if(r.members.every(m=>m?.stream)){for(const m of r.members)if(now-m.seen>400)m.input={};step(r.game,r.members.map(m=>m.input),1/30);}broadcast(r);}},1000/30);
