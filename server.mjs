@@ -40,6 +40,7 @@ export function createServer(){
         return json(res,200,{ok:true});
       }
       if(req.method==='GET'&&url.pathname==='/health')return json(res,200,{ok:true});
+      if(req.method==='GET'&&url.pathname==='/api/config')return json(res,200,{transport:'sse'});
       const allowed={'/':'index.html','/index.html':'index.html','/style.css':'style.css','/client.js':'client.js','/engine.js':'engine.js'};
       const name=allowed[url.pathname];if(req.method!=='GET'||!name)throw fail(404,'Not found');
       const data=await readFile(new URL(name,root));res.writeHead(200,{'Content-Type':name.endsWith('.html')?'text/html; charset=utf-8':name.endsWith('.css')?'text/css':'text/javascript','Cache-Control':'no-cache','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'});res.end(data);

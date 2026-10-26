@@ -3,11 +3,12 @@
 ## Current verification (October 25, 2026)
 
 - Imported the complete project from `handshakefootball.bundle` and preserved it locally.
-- All 13 automated tests pass on Windows with Node.js 24.22.1.
+- All 19 automated tests pass on Windows with Node.js 24.22.1.
 - Fixed a Windows line-ending assumption in the client test harness.
 - Verified both teams can switch defenders and transfer control with through balls.
 - Rejected malformed action directions before they can corrupt shared game state; invalid JSON payload shapes and oversized room-creation requests return client errors.
 - Automated network checks cover two authenticated players, shared snapshots, disconnect pause, reconnect, mutual rematch, and health/static routes.
+- Vercel deployment uses shared Postgres rooms and authenticated polling. Automated checks cover concurrent instances and two simulated browser clients; real cloud-database and public URL verification are recorded after deployment.
 - Browser automation stopped because it could not verify the current Chrome URL. Visual rendering, touch interaction, and two physical devices have **not** been verified.
 - Public deployment and challenge submission are still pending.
 
@@ -25,11 +26,11 @@ For same-computer testing, open two independently created tabs or different brow
 
 ## Before sharing the final challenge link
 
-- Deploy the Render Blueprint from the README and wait for a successful build and health check.
+- Deploy the Vercel project from the README and wait for a successful build and health check. Complete the Neon Free database connection and Cloudflare DNS setup if pending.
 - Visit the HTTPS URL while signed out; no login should be needed to play.
 - Run the test above on two physical devices on different networks.
-- Confirm `/api/events` updates continuously; a frozen match can indicate buffered streaming responses.
-- After free hosting wakes up, create a new room rather than relying on an old code.
+- On Vercel, confirm `/api/sync` requests succeed continuously. For standalone Node hosting, confirm `/api/events` streams continuously without proxy buffering.
+- On Vercel, disconnect detection can take up to two seconds. On an alternative host that discards rooms when sleeping, create a fresh room after it wakes up.
 - Prepare the project title, cover image, description, and tested public URL. Submit through Handshake yourself after reviewing its rules.
 
 ## Record feedback

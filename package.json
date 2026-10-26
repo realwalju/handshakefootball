@@ -4,6 +4,15 @@
   "private": true,
   "type": "module",
   "description": "Two humans, two teams of eleven. A browser soccer prototype.",
-  "scripts": { "start": "node server.mjs", "test": "node --test test/*.test.mjs" },
-  "engines": { "node": ">=20" }
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test test/*.test.mjs",
+    "build": "node scripts/setup-storage.mjs && npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.2.0"
+  }
 }

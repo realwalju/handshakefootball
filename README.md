@@ -7,10 +7,11 @@ A first playable soccer prototype: two human rivals, each controlling a full tea
 Install Node.js 20 or newer, open a terminal in this folder, and run:
 
 ```sh
+npm ci
 npm start
 ```
 
-Open http://localhost:3000. No npm install is required: the server uses Node's built-in modules.
+Open http://localhost:3000. The local server uses Node's built-in modules; the Neon dependency supports Vercel's shared room storage.
 
 For a first test, open the page in two separate browser profiles or browsers. Create a match in one and enter its six-character code in the other. Each browser tab has its own player session; reloading a tab reconnects to that seat. Both players must remain connected for the clock to run.
 
@@ -37,7 +38,7 @@ Phone controls appear automatically on touch devices. Aim with movement. When st
 ## Current scope
 
 - Two teams of eleven, one human per team; separate computer-opponent warm-up.
-- Shared server simulation at 30 updates/second; movement inputs sent at 20 updates/second.
+- Shared simulation at 30 steps/second; local snapshots stream at 30 updates/second. On Vercel, clients synchronize at up to 20 updates/second, depending on network latency.
 - Directional passing, through balls, charged shots, tackling, interceptions, simple supporting movement, and automated goalkeepers.
 - Three-minute matches, scoring, kickoffs, simplified throw-ins/corners/goal kicks, and mutual online rematch votes.
 - Room codes, invite links, automatic reconnect to the same seat, and match pause on disconnect.
@@ -47,6 +48,26 @@ This is a prototype, not a finished simulation. There is no offside, foul system
 
 ## Publish for the challenge
 
+### Vercel: soccer.walju.net
+
+The Vercel project is `touchline-duel` in `realwaljus-projects`. `vercel.json` serves the game and routes its API to a Node function. A **free Neon Postgres database** stores rooms so opponents reach the same match even when requests run on different Vercel instances. Secrets stay on the server in `DATABASE_URL`; never copy this value into public JavaScript.
+
+1. Connect the `touchline-duel-rooms` Neon database to the project, using the Free plan and the `iad1` region. The integration supplies `DATABASE_URL` to the project.
+2. Deploy this repository. `npm run build` creates the two room-storage tables if needed and runs the automated tests; a failed setup or test blocks the build.
+3. Attach `soccer.walju.net` to the project. DNS is hosted by Cloudflare: set **CNAME** `soccer` to **`b84472f02dad497e.vercel-dns-017.com`**, with **DNS only** (proxy disabled), as recommended by Vercel for this project. Leave other domain records unchanged. Recheck Vercel's current recommendation before changing it in the future.
+4. Verify `https://soccer.walju.net/health` returns `ok: true`, then test two devices using the checklist below.
+
+Vercel uses short authenticated polling requests. Each request advances the shared simulation in fixed steps, and version-checked writes prevent competing requests from overwriting each other. No background timer or in-memory room registry is required in the function. Presence expires after two seconds without a sync, and movement input expires after 400 ms. Rooms expire after 20 minutes without authenticated activity; creating rooms is limited to eight per minute per IP and 128 active rooms overall. These limits are for an initial public playtest, not a load-test result.
+
+For deployment from a signed-in CLI:
+
+```sh
+npx vercel link --project touchline-duel --scope realwaljus-projects
+npx vercel --prod
+```
+
+### Alternative: standalone Node host
+
 [Deploy to Render](https://render.com/deploy?repo=https://github.com/realwalju/handshakefootball)
 
 This repository includes `render.yaml` for a single **free Node web service**. After pushing to GitHub, open the deploy link, sign in to Render, and review the Blueprint. Keep the Free plan selected. Render runs `npm test` before starting the server, uses `/health` for its health check, and provides an HTTPS `onrender.com` URL. Do not create a Static Site. See [Render's Blueprint reference](https://render.com/docs/blueprint-spec).
@@ -55,7 +76,7 @@ Render's free service sleeps after 15 minutes without incoming traffic and can t
 
 Deploy this folder to a host that runs a **persistent Node process** and supports streaming HTTP responses. Set its start command to `npm start`; the app listens on `0.0.0.0` and uses the supplied `PORT` environment variable. Use one server instance. Static-only hosting cannot run the multiplayer server.
 
-Use HTTPS and ensure the reverse proxy does not buffer `/api/events`. The server sends event-stream snapshots; buffering them will cause lag or freeze updates. Rooms live in memory and disappear when the server restarts. This prototype caps active rooms at 128, expires abandoned rooms after 20 minutes, checks room tokens for player actions, and limits request sizes; it is not load-tested or hardened for large public traffic. A public release should add request-rate limiting, monitoring, and a cap on connection creation appropriate to its host.
+For standalone hosting, use HTTPS and ensure the reverse proxy does not buffer `/api/events`. The local Node server sends event-stream snapshots; buffering them will cause lag or freeze updates. In this mode, rooms live in memory and disappear when the server restarts. This mode caps active rooms at 128, expires abandoned rooms after 20 minutes, checks room tokens for player actions, and limits request sizes; it is not load-tested or hardened for large public traffic. A public standalone release should add request-rate limiting, monitoring, and a cap on connection creation appropriate to its host.
 
 Before submission, test two physical devices on different networks: room creation, joining, passing, switching, shooting, match completion, disconnect/reconnect, phone controls, and rematch. Verify the published link without a logged-in session.
 
@@ -64,10 +85,16 @@ Use [PLAYTEST.md](PLAYTEST.md) for a short two-player test and the current verif
 ## Verification
 
 ```sh
+npm ci
 npm test
 ```
 
-The automated suite covers team composition, possession restrictions, pass/control transfer, fast-shot interception, goals, restarts, keeper distribution, full-match numerical stability, and two-player room authentication/synchronization/disconnect/rematch.
+The 19-test automated suite covers team composition, possession restrictions, pass/control transfer, fast-shot interception, goals, restarts, keeper distribution, full-match numerical stability, two-player room authentication/synchronization/disconnect/rematch, cross-instance room updates, concurrent joins, and the polling client. A separate real-database integration check is available after the Neon integration is connected:
+
+```sh
+npx vercel env pull .env.local
+node --env-file=.env.local --test test/postgres.integration.mjs
+```
 
 ## Suggested remaining schedule
 
