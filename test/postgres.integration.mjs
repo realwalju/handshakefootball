@@ -29,8 +29,9 @@ test('real Postgres serializes two independent players without losing state',asy
     fixture.room.lastTick=Date.now();
     assert.equal(await storeA.compareAndSet(host.room,fixture.version,fixture.room,Date.now()),true);
     await a('action',{kind:'pass',x:1,y:0},host);
-    assert.notEqual((await storeA.read(host.room,Date.now())).room.game.selected[0],carrier);
-    const next=await b('sync',{},guest);assert.equal(next.game.players.length,22);
+    assert.equal((await storeA.read(host.room,Date.now())).room.game.selected[0],carrier);
+    let next;for(let n=0;n<30;n++){await wait(80);const packets=await Promise.all([a('sync',{},host),b('sync',{},guest)]);next=packets[1];if(next.game.selected[0]!==carrier)break;}
+    assert.notEqual(next.game.selected[0],carrier);assert.equal(next.game.selected[0],next.game.ball.owner);assert.equal(next.game.players.length,22);
     assert.ok(!JSON.stringify(next).includes(host.token));assert.ok(!JSON.stringify(next).includes(guest.token));
     await a('leave',{},host);assert.equal((await b('sync',{},guest)).status,'paused');
   }finally{

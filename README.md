@@ -4,13 +4,13 @@
 
 [Try the basic 3D version](https://soccer.walju.net/?view=3d). On browsers with WebGL2, 3D is the default and opens with the closer broadcast camera, intended receiving-space marker, and full-pitch radar. The **Camera** button switches to the full-pitch view, while **2D** switches views without restarting the match.
 
-A playable soccer prototype: two human rivals, each controlling a full team of eleven. Passes switch control to their intended receiver; teammates build passing angles, make runs, and defend from a flexible 4–4–2 base.
+A playable soccer prototype: two human rivals, each controlling a full team of eleven. Passes transfer control only when a receiver or interceptor controls the ball; teammates build passing angles, make runs, and defend from a flexible 4–4–2 base.
 
 ## Movement and team play
 
 Players accelerate, brake, and turn with momentum. Off the ball, they make individual decisions: midfielders show for a pass, forwards alternate channel runs and dropping short, wingers hold width or cut inside, and a fullback can overlap on the ball side. The defending team commits a presser, keeps cover behind them, and tracks runners instead of sending everyone toward the ball.
 
-After a pass, the passer makes a forward supporting run. The intended receiver continues toward the ball while you are not steering; movement input immediately takes priority. Passing targets account for space and blocked lanes. When an AI defender wins possession, control transfers to that player; goalkeepers settle and distribute the ball automatically. Quick passes are available after a ball win while repeated tackles still need recovery time.
+After a pass, you keep control of the passer while the intended receiver independently attacks the ball. Control transfers on the receiver's first touch, or to an opponent who intercepts it. Passing targets account for space and blocked lanes. When an AI defender wins possession, control transfers to that player; goalkeepers settle and distribute the ball automatically. Quick passes are available after a ball win while repeated tackles still need recovery time.
 
 The 3D gait follows actual travel speed, with separate stride phases, bent knees/elbows, and easing in and out of motion. A short visual extrapolation smooths online snapshots without changing authoritative match state. These are prototype football behaviors, not a professional simulation; feel and team balance still need playtesting.
 
@@ -43,15 +43,15 @@ Open `touchline-duel-demo.html` directly in a browser. This self-contained demo 
 
 ## Controls
 
-| Action | Keyboard |
-| --- | --- |
-| Move / aim | WASD or arrow keys |
-| Sprint | Shift |
-| Pass | J |
-| Through ball | L |
-| Shoot | Hold K, then release |
-| Switch defender | Q |
-| Tackle | E |
+| Action | Keyboard | Standard controller |
+| --- | --- | --- |
+| Move / aim | WASD or arrow keys | Left stick or D-pad |
+| Sprint | Shift | RT / R2 |
+| Pass | J | A / × |
+| Through ball | L | Y / △ |
+| Shoot | Hold K, then release | Hold X / □, then release |
+| Switch defender | Q | LB / L1 |
+| Tackle | E | B / ○ |
 
 Phone controls appear automatically on touch devices. Aim with movement. When standing still, shots aim toward the center of the opponent's goal. Your selected player has a lime ring; the small bar is sprint stamina. Goalkeepers distribute possession automatically.
 
@@ -64,7 +64,7 @@ Phone controls appear automatically on touch devices. Aim with movement. When st
 - Room codes, invite links, automatic reconnect to the same seat, and match pause on disconnect.
 - Original fictional teams and procedurally built 2D/3D visuals; no downloaded player artwork. Three.js supplies the 3D renderer and esbuild bundles the browser asset.
 
-This is a prototype, not a finished simulation. There is no offside, foul system, aerial ball physics, substitutions, gamepad support, account system, or skill-based matchmaking. Players' tactical behavior is intentionally basic. The first build prioritizes a complete match loop and a working two-device architecture; gameplay tuning and testing over real internet connections remain necessary.
+This is a prototype, not a finished simulation. There is no offside, foul system, aerial ball physics, substitutions, account system, or skill-based matchmaking. Players' tactical behavior is intentionally basic. The first build prioritizes a complete match loop and a working two-device architecture; gameplay tuning and testing over real internet connections remain necessary.
 
 ## Publish for the challenge
 
@@ -109,7 +109,7 @@ npm ci
 npm test
 ```
 
-The 35-test automated suite covers team composition and role traits, possession restrictions, readable pass and through-ball speed, directional wall/forward/recycle options, first-touch buffering, loose-ball tackles, parries and recovery, goals, restarts, keeper distribution, full-match numerical stability, two-player room authentication/synchronization/disconnect/rematch, cross-instance room updates, the polling client, articulated 3D models and animation, broadcast and full-pitch camera framing, a 2D fallback without WebGL, acceleration/braking, coordinated support options, defensive cover, receiving assistance/manual override, and deterministic movement. See [the eFootball pacing study](docs/gameplay-analysis.md) for the measured problems, reference principles, current calibration, and known limits. A separate real-database integration check is available after the Neon integration is connected:
+The 36-test automated suite covers team composition and role traits, possession restrictions, pass-completion and interception handoffs, readable pass and through-ball speed, controller input, directional wall/forward/recycle options, first-touch buffering, loose-ball tackles, parries and recovery, goals, restarts, keeper distribution, full-match numerical stability, two-player room authentication/synchronization/disconnect/rematch, cross-instance room updates, the polling client, articulated 3D models and animation, broadcast and full-pitch camera framing, a 2D fallback without WebGL, acceleration/braking, coordinated support options, defensive cover, receiving runs, and deterministic movement. See [the eFootball pacing study](docs/gameplay-analysis.md) for the measured problems, reference principles, current calibration, and known limits. A separate real-database integration check is available after the Neon integration is connected:
 
 ```sh
 npx vercel env pull .env.local

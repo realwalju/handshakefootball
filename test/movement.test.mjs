@@ -26,7 +26,7 @@ test('teammates create independent support angles and preserve width behind a st
 });
 test('directional passing exposes a wall option, forward diagonal and recycle outlet',()=>{
   const base=playing();run(base,120);const found=new Set(),receivers=new Set();
-  for(const [x,y] of [[1,0],[0,-1],[-1,0]]){const g=structuredClone(base);g.players[g.ball.owner].cool=0;assert.equal(action(g,0,'pass',x,y),true);const receiver=g.players[g.selected[0]];found.add(receiver.intent);receivers.add(receiver.id);}
+  for(const [x,y] of [[1,0],[0,-1],[-1,0]]){const g=structuredClone(base);g.players[g.ball.owner].cool=0;assert.equal(action(g,0,'pass',x,y),true);const receiver=g.players[g.pass.to];found.add(receiver.intent);receivers.add(receiver.id);}
   assert.deepEqual(found,new Set(['forward diagonal','wall pass option','recycle option']));assert.equal(receivers.size,3);
 });
 test('defenders press and cover without every player chasing the ball',t=>{
@@ -40,15 +40,15 @@ function throughFixture(){
   Object.assign(g.players[9],{x:500,y:340,cool:0});Object.assign(g.players[10],{x:650,y:400,cool:0});
   g.ball={x:512,y:340,vx:0,vy:0,owner:9,lock:0,last:0};return g;
 }
-test('a through-ball receiver runs onto the pass without input while the passer moves forward',()=>{
-  const g=throughFixture(),receiverX=g.players[10].x;assert.equal(action(g,0,'through',1,0),true);assert.equal(g.selected[0],10);
+test('a through-ball receiver runs onto the pass before control transfers on contact',()=>{
+  const g=throughFixture(),receiverX=g.players[10].x;assert.equal(action(g,0,'through',1,0),true);assert.equal(g.selected[0],9);
   assert.ok(g.pass.x>receiverX);assert.ok(Math.hypot(g.ball.vx,g.ball.vy)>=195&&Math.hypot(g.ball.vx,g.ball.vy)<=285);
-  run(g,30);assert.ok(g.players[10].x>680);assert.ok(g.players[9].x>545);
-  assert.equal(g.ball.owner,10);
+  run(g,30);assert.ok(g.players[10].x>680);assert.ok(Math.abs(g.players[9].x-500)<5);
+  assert.equal(g.ball.owner,10);assert.equal(g.selected[0],10);
 });
-test('manual steering overrides the receiving run immediately',()=>{
+test('manual steering remains with the passer while the receiver attacks the ball',()=>{
   const g=throughFixture();action(g,0,'through',1,0);run(g,10,[{x:-1},{}]);
-  assert.ok(g.players[10].x<650);assert.ok(g.players[10].vx<0);
+  assert.ok(g.players[9].x<500);assert.ok(g.players[10].x>650);
 });
 test('automatic pressure must stay goal-side before committing a challenge',()=>{
   const g=playing();for(const p of g.players.filter(p=>p.team===1))Object.assign(p,{x:900,y:80});

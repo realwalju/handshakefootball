@@ -6,3 +6,4 @@
 .pitch-wrap canvas.radar{position:absolute;right:14px;bottom:14px;width:156px;height:auto;border:1px solid #cfdfb650;pointer-events:none;border-radius:3px}
 .app.playing{max-width:1600px;padding:0 2%}.playing header{height:50px}.playing .intro,.playing footer{display:none}.playing .viewbar{margin:8px 0}.playing .scorebar{height:48px}.playing .pitch-wrap{height:calc(100dvh - 240px);min-height:320px;max-height:850px;aspect-ratio:auto}.playing .controls{padding:12px 0}.playing .room-banner{padding:7px 10px}
 @media(pointer:coarse){.playing .pitch-wrap{height:calc(100dvh - 330px);min-height:260px}.playing .touch-controls{padding:10px 5px}.pitch-wrap canvas.radar{width:112px;right:8px;bottom:8px}}
+.controls .controller-map{flex-basis:100%;justify-content:center}.controls .controller-status{font-size:8px;color:var(--accent);letter-spacing:.6px}

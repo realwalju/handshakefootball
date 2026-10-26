@@ -18,7 +18,9 @@ test('separate serverless instances share both humans, clock, passing and defend
   assert.equal(guest.status,'connected');assert.equal(guest.game.phase,'playing');assert.ok(guest.game.clock>179&&guest.game.clock<180);
   assert.equal(host.game.clock,guest.game.clock);assert.equal(guest.game.players.length,22);assert.ok(f.store.conflicts>0);
   f.advance(100);await f.a('action',{kind:'pass',x:1,y:0},f.host);
-  state=await f.b('sync',{},f.guest);assert.notEqual(state.game.selected[0],9);assert.equal(state.game.ball.owner,null);
+  state=await f.b('sync',{},f.guest);assert.equal(state.game.selected[0],9);assert.equal(state.game.ball.owner,null);
+  for(let n=0;n<25&&state.game.selected[0]===9;n++){f.advance(100);const packets=await Promise.all([f.a('sync',{},f.host),f.b('sync',{},f.guest)]);state=packets[1];}
+  assert.notEqual(state.game.selected[0],9);assert.equal(state.game.selected[0],state.game.ball.owner);
   const old=state.game.selected[1];await f.b('action',{kind:'switch'},f.guest);
   state=await f.a('sync',{},f.host);assert.notEqual(state.game.selected[1],old);
   assert.ok(!JSON.stringify(state).includes(f.host.token));assert.ok(!JSON.stringify(state).includes(f.guest.token));

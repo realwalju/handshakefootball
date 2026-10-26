@@ -51,7 +51,9 @@ test('two browser clients create and join through polling, move, pass, switch an
   const before=host.run('game.players[game.selected[0]].x');key(host,'d');host.poll();await until(()=>!host.run('inputBusy'));
   now+=100;host.poll();await until(()=>!host.run('inputBusy'));assert.ok(host.run('game.players[game.selected[0]].x')>before);
   key(host,'d',false);const carrier=host.run('game.selected[0]');key(host,'j');
-  await until(()=>store.rooms.get(host.run('session.room')).room.game.selected[0]!==carrier);
+  assert.equal(store.rooms.get(host.run('session.room')).room.game.selected[0],carrier);
+  for(let n=0;n<25&&store.rooms.get(host.run('session.room')).room.game.selected[0]===carrier;n++){now+=100;host.poll();await until(()=>!host.run('inputBusy'));guest.poll();await until(()=>!guest.run('inputBusy'));}
+  assert.notEqual(store.rooms.get(host.run('session.room')).room.game.selected[0],carrier);
   host.poll();await until(()=>!host.run('inputBusy'));guest.poll();await until(()=>!guest.run('inputBusy'));
   assert.equal(host.run('game.selected[0]'),guest.run('game.selected[0]'));
   const old=guest.run('game.selected[1]');key(guest,'q');await until(()=>store.rooms.get(host.run('session.room')).room.game.selected[1]!==old);

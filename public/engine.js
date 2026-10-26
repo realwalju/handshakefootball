@@ -72,7 +72,9 @@ export function action(g,team,kind,aimX=0,aimY=0,power=.65) {
     speed=kind==='through'?clamp(required,PACE.throughMin,PACE.throughMax):clamp(required,PACE.passMin,PACE.passMax);
     g.pass={team,from:p.id,to:target.id,x:clamp(tx,15,W-15),y:clamp(ty,15,H-15),through:kind==='through',time:clamp(dist(p,target)/speed*2+1.2,2,5)};
     p.runTime=3.6;p.runX=clamp(p.x+(team?-100:100),40,W-40);p.runY=clamp(p.y+(p.y<H/2?-38:38),45,H-45);p.planTime=0;
-    g.selected[team]=target.id;g.message=kind==='through'?'THROUGH BALL':'PASS';
+    // The intended receiver attacks the target under AI control. Selection only
+    // changes in receive(), after somebody has physically controlled the ball.
+    g.message=kind==='through'?'THROUGH BALL':'PASS';
   }else if(kind==='shoot'){
     g.pass=null;
     power=clamp(Number(power)||.65,.2,1);

@@ -1,7 +1,7 @@
 import {W,H,createGame,step,action} from './engine.js';
 const $=id=>document.getElementById(id),canvas=$('pitch'),ctx=canvas.getContext('2d');
 const COLORS=['#ff836b','#8acbea'];let game=createGame(),mode='lobby',team=0,session=null,stream=null,connected=false,onlineStatus='waiting',lastPacket=0,lastTime=0,accumulator=0,chargeStart=0,noticeUntil=0,lastMessage='',inputBusy=false;
-const keys=new Set(),touch={x:0,y:0,sprint:false},renderPositions=new Map();
+const keys=new Set(),touch={x:0,y:0,sprint:false},controller={index:null,x:0,y:0,sprint:false,buttons:[],shooting:false},renderPositions=new Map();
 let input={x:0,y:0,sprint:false};const ox=75,oy=60;canvas.width=2400;canvas.height=1600;ctx.scale(2,2);
 let requestedView='2d',view3D=null,loading3D=null,cameraMode='follow';
 function updateViewUI(){const active=!!view3D&&requestedView==='3d';canvas.hidden=active;$('pitch3d').hidden=!active;$('view2dButton').ariaPressed=String(!active);$('view3dButton').ariaPressed=String(active);$('cameraButton').hidden=!active;$('viewHint').textContent=active?'3D prototype · same controls':'Try a new angle. Same match, same controls.';}
@@ -13,12 +13,31 @@ function matchLayout(playing){document.querySelector('.app').classList.toggle('p
 let transport='sse',networkError=null;
 async function configureNetwork(){const r=await fetch('/api/config');const data=await r.json();if(!r.ok)throw new Error(data.error||'Connection failed');transport=data.transport==='poll'?'poll':'sse';networkError=null;}
 const networkReady=location.protocol==='file:'?Promise.resolve():configureNetwork().catch(e=>{networkError=e;});
-function readInput(){let x=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0),y=(keys.has('s')||keys.has('arrowdown')?1:0)-(keys.has('w')||keys.has('arrowup')?1:0);if(touch.x||touch.y){x=touch.x;y=touch.y;}return {x,y,sprint:keys.has('shift')||touch.sprint};}
+const deadzone=value=>{const magnitude=Math.abs(Number(value)||0);return magnitude<.16?0:Math.sign(value)*Math.min(1,(magnitude-.16)/.84);};
+function readInput(){let x=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0),y=(keys.has('s')||keys.has('arrowdown')?1:0)-(keys.has('w')||keys.has('arrowup')?1:0);if(controller.x||controller.y){x=controller.x;y=controller.y;}if(touch.x||touch.y){x=touch.x;y=touch.y;}return {x,y,sprint:keys.has('shift')||touch.sprint||controller.sprint};}
+function setController(pad){
+  if(!pad){if(controller.index!==null)$('controllerStatus').textContent='Controller disconnected';controller.index=null;controller.x=controller.y=0;controller.sprint=false;controller.buttons=[];controller.shooting=false;return;}
+  if(controller.index!==pad.index){controller.index=pad.index;controller.buttons=[];$('controllerStatus').textContent=`Controller connected · ${pad.id||'Gamepad'}`;if(mode!=='lobby')notify('CONTROLLER CONNECTED');}
+}
+function pollController(now){
+  if(typeof navigator.getGamepads!=='function')return;
+  const pads=[...navigator.getGamepads()].filter(Boolean);let pad=pads.find(item=>item.index===controller.index);
+  if(!pad)pad=pads.find(item=>item.mapping==='standard')||pads[0];setController(pad);if(!pad)return;
+  const pressed=index=>!!pad.buttons?.[index]?.pressed,justPressed=index=>pressed(index)&&!controller.buttons[index];
+  if($('help').open){controller.x=controller.y=0;controller.sprint=false;controller.buttons=Array.from(pad.buttons||[],button=>!!button.pressed);return;}
+  let x=deadzone(pad.axes?.[0]),y=deadzone(pad.axes?.[1]);
+  if(pressed(14))x=-1;if(pressed(15))x=1;if(pressed(12))y=-1;if(pressed(13))y=1;
+  const magnitude=Math.hypot(x,y);if(magnitude>1){x/=magnitude;y/=magnitude;}controller.x=x;controller.y=y;controller.sprint=pressed(7);input=readInput();
+  if(justPressed(0))sendAction('pass');if(justPressed(3))sendAction('through');if(justPressed(4))sendAction('switch');if(justPressed(1))sendAction('tackle');
+  if(pressed(2)&&!controller.shooting&&mode!=='lobby'){controller.shooting=true;chargeStart=now;}
+  if(!pressed(2)&&controller.shooting){sendAction('shoot',Math.min(1,.2+(now-chargeStart)/900));controller.shooting=false;chargeStart=0;}
+  controller.buttons=Array.from(pad.buttons||[],button=>!!button.pressed);
+}
 function uiStatus(label,live=false){$('status').textContent=label;$('statusDot').classList.toggle('live',live);}
 async function api(path,data={},auth=true){const u=new URL(path,location.href);if(auth&&session)u.searchParams.set('room',session.room);const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);try{const r=await fetch(u,{method:'POST',signal:controller.signal,headers:{'Content-Type':'application/json',...(auth&&session?{Authorization:`Bearer ${session.token}`}:{})},body:JSON.stringify(data)});const v=await r.json();if(!r.ok)throw Object.assign(new Error(v.error||'Connection failed'),{status:r.status});return v;}finally{clearTimeout(timeout);}}
 function notify(message){$('matchNotice').textContent=message;$('matchNotice').hidden=false;noticeUntil=performance.now()+2500;}
 function sendAction(kind,power=.65){if(mode==='lobby')return;if(mode==='practice'){action(game,team,kind,input.x,input.y,power);return;}if(!connected)return;api('/api/action',{kind,x:input.x,y:input.y,power}).catch(e=>notify(e.message));}
-function clearInput(){keys.clear();touch.x=touch.y=0;touch.sprint=false;input=readInput();chargeStart=0;$('stick').style.transform='';if(mode==='online')api('/api/input',input).catch(()=>{});}
+function clearInput(){keys.clear();touch.x=touch.y=0;touch.sprint=false;controller.x=controller.y=0;controller.sprint=false;controller.shooting=false;input=readInput();chargeStart=0;$('stick').style.transform='';if(mode==='online')api('/api/input',input).catch(()=>{});}
 function enterPractice(){leave(false);mode='practice';matchLayout(true);team=0;game=createGame();game.bot=[false,true];renderPositions.clear();$('lobby').hidden=true;$('leaveButton').hidden=false;$('roomBanner').hidden=true;uiStatus('WARM UP · VS COMPUTER',true);}
 function connect(s){session=s;mode='online';matchLayout(true);team=s.team;connected=false;onlineStatus='waiting';renderPositions.clear();try{sessionStorage.setItem('touchline-session',JSON.stringify(s));}catch{}$('lobby').hidden=true;$('leaveButton').hidden=false;$('roomBanner').hidden=false;$('roomCode').textContent=s.room;$('roomHint').textContent='Share the code with your opponent.';uiStatus('CONNECTING');
   if(transport==='poll'){syncRoom();return;}
@@ -86,7 +105,7 @@ function draw(now){const active=game.players[game.selected[team]];if(view3D&&req
     $('rematchButton').hidden=game.phase!=='ended';if(game.phase!=='ended')$('rematchButton').textContent='Play again ↗';
   }
 }
-function frame(now){const elapsed=Math.min((now-lastTime)/1000,.1);lastTime=now;input=readInput();if(mode==='practice'){accumulator+=elapsed;let n=0;while(accumulator>=1/60&&n++<6){step(game,[input,{}],1/60);accumulator-=1/60;}}else accumulator=0;if(mode==='online'&&connected&&now-lastPacket>3000){connected=false;uiStatus('RECONNECTING');}draw(now);requestAnimationFrame(frame);}
+function frame(now){const elapsed=Math.min((now-lastTime)/1000,.1);lastTime=now;pollController(now);input=readInput();if(mode==='practice'){accumulator+=elapsed;let n=0;while(accumulator>=1/60&&n++<6){step(game,[input,{}],1/60);accumulator-=1/60;}}else accumulator=0;if(mode==='online'&&connected&&now-lastPacket>3000){connected=false;uiStatus('RECONNECTING');}draw(now);requestAnimationFrame(frame);}
 const room=new URLSearchParams(location.search).get('room');if(room)$('roomInput').value=room.slice(0,6).toUpperCase();
 try{const s=JSON.parse(sessionStorage.getItem('touchline-session'));if(s?.token&&s.room&&location.protocol!=='file:')networkReady.then(()=>{if(!networkError)connect(s);else $('error').textContent=networkError.message;});}catch{}
 updateViewUI();if(new URLSearchParams(location.search).get('view')!=='2d'&&typeof WebGL2RenderingContext!=='undefined')chooseView('3d');

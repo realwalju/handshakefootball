@@ -60,7 +60,10 @@ test('published two-player match supports movement, passing, switching, reconnec
     // Pass at kickoff before dribbling into a pressing opponent.
     const id=packets[0].game.selected[0];
     await post('action',{kind:'pass',x:1,y:0},host);packets=await pair();
+    assert.equal(packets[0].game.selected[0],id);assert.equal(packets[0].game.ball.owner,null);
+    for(let n=0;n<25&&packets[0].game.selected[0]===id;n++){await wait(100);packets=await pair();}
     assert.notEqual(packets[0].game.selected[0],id,JSON.stringify({phase:packets[0].game.phase,owner:packets[0].game.ball.owner,selected:packets[0].game.selected,message:packets[0].game.message,cool:packets[0].game.players[id].cool}));
+    assert.equal(packets[0].game.selected[0],packets[0].game.ball.owner);
     const receiver=packets[0].game.selected[0],before=packets[0].game.players[receiver].x;
     await pair({x:1});await wait(100);packets=await pair({x:1});assert.ok(packets[0].game.players[receiver].x>before);
     const defender=packets[1].game.selected[1];await post('action',{kind:'switch'},guest);packets=await pair();
