@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createGame,step,action,W,H} from '../public/engine.js';
+const playable=()=>{const g=createGame();g.phase='playing';return g;};
+test('two complete teams, opposing formations, and a human-controlled kickoff',()=>{const g=createGame();assert.equal(g.players.length,22);assert.equal(g.players.filter(p=>p.n===1).length,2);assert.equal(g.ball.owner,g.selected[0]);assert.ok(g.players[11].x>g.players[0].x);});
+test('passing releases the ball and switches control to a teammate',()=>{const g=playable(),id=g.ball.owner;assert.equal(action(g,0,'pass',1,0),true);assert.equal(g.ball.owner,null);assert.notEqual(g.selected[0],id);assert.equal(g.players[g.selected[0]].team,0);assert.ok(Math.hypot(g.ball.vx,g.ball.vy)>300);});
+test('the opponent cannot pass a ball it does not possess',()=>{const g=playable();assert.equal(action(g,1,'pass',-1,0),false);assert.equal(g.ball.owner,9);});
+test('a swept shot can be saved rather than tunnelling through a goalkeeper',()=>{const g=playable();for(const p of g.players){p.x=400;p.y=80;}const keeper=g.players[11];keeper.x=W-30;keeper.y=340;g.ball={x:W-35,y:340,vx:900,vy:0,owner:null,lock:0,last:0};step(g,[{},{}],.05);assert.equal(g.ball.owner,keeper.id);assert.deepEqual(g.score,[0,0]);});
+test('crossing the goal line scores once and restarts with the conceding team',()=>{const g=playable();g.ball={x:W-1,y:340,vx:900,vy:0,owner:null,lock:1,last:0};step(g);assert.deepEqual(g.score,[1,0]);assert.equal(g.phase,'goal');assert.equal(g.players[g.ball.owner].team,1);for(let i=0;i<30;i++)step(g);assert.deepEqual(g.score,[1,0]);});
+test('touchline exit awards possession to the other team',()=>{const g=playable();g.ball={x:400,y:1,vx:0,vy:-400,owner:null,lock:1,last:0};step(g);assert.equal(g.phase,'restart');assert.equal(g.message,'THROW IN');assert.equal(g.players[g.ball.owner].team,1);});
+test('keeper automatically distributes possession',()=>{const g=playable();g.ball.owner=0;g.selected[0]=9;g.aiTick=1.04;step(g);assert.equal(g.ball.owner,null);assert.notEqual(g.selected[0],0);});
+test('a full match ends with finite positions and cannot score afterward',()=>{const g=playable();g.bot=[true,true];for(let i=0;i<12000&&g.phase!=='ended';i++){step(g,[{},{}]);for(const p of g.players){assert.ok(Number.isFinite(p.x)&&Number.isFinite(p.y));assert.ok(p.x>=0&&p.x<=W&&p.y>=0&&p.y<=H);}}assert.equal(g.phase,'ended');assert.equal(g.clock,0);const score=[...g.score];step(g);assert.deepEqual(g.score,score);});

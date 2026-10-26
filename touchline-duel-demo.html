@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101e24"><title>Touchline Duel — Eleven a side. One on one.</title><style>:root{--bg:#101d23;--panel:#18282f;--line:#ffffff18;--cream:#f1eee4;--muted:#9aa9aa;--accent:#d5f581;--coral:#ff836b;--sky:#8acbea}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--cream);font-family:Arial,Helvetica,sans-serif}button,input{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:wait}button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:4px}button{transition:filter .15s,background .15s}button:hover{filter:brightness(1.12)}.app{max-width:1400px;margin:auto;padding:0 6%}header{height:94px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}.brand{color:var(--cream);text-decoration:none;font-size:17px;font-weight:900;letter-spacing:1px;display:flex;align-items:center;gap:8px}.brand b{color:var(--accent)}.brandmark{display:grid;place-items:center;width:32px;height:32px;background:var(--accent);color:var(--bg);font-size:28px;margin-right:3px}.edition{font-size:10px;letter-spacing:2px;display:flex;align-items:center;gap:12px;color:var(--muted)}.edition i{width:3px;height:3px;background:var(--accent);border-radius:50%}.quiet{background:transparent;border:0;color:var(--cream);font-size:11px;letter-spacing:.3px;padding:8px}.quiet span{border:1px solid #66767a;border-radius:50%;margin-left:9px;padding:1px 5px}.intro{display:flex;justify-content:space-between;align-items:center;padding:45px 0 35px;gap:30px}.eyebrow{font-size:9px;letter-spacing:1.6px;color:var(--accent);font-weight:bold;display:flex;gap:8px;align-items:center}.eyebrow span{width:5px;height:5px;border-radius:50%;background:var(--accent)}h1{font-size:clamp(38px,4.5vw,61px);line-height:1.02;letter-spacing:-2.5px;margin:18px 0}h1 em{font-style:normal;color:var(--accent)}.intro p{font-size:12px;line-height:1.8;color:var(--muted);margin:0}.match-card{width:320px;background:#192a30;border:1px solid var(--line);padding:19px}.card-label,.card-bottom{display:flex;justify-content:space-between;font-size:8px;letter-spacing:1px;color:var(--muted)}.card-label span{color:var(--accent)}.versus{display:flex;align-items:center;justify-content:space-around;padding:24px 0}.versus>div{display:flex;flex-direction:column;align-items:center;gap:10px}.versus b{font-size:10px;letter-spacing:1px}.versus small{color:#667b80;font-style:italic;font-size:13px}.crest{width:43px;height:49px;clip-path:polygon(0 0,100% 0,100% 70%,50% 100%,0 70%);display:grid;place-items:center;font-size:23px;font-weight:900;color:#17282f}.coral{background:var(--coral)}.sky{background:var(--sky)}.card-bottom{border-top:1px solid var(--line);padding-top:15px;font-size:7px}.arena{border:1px solid #ffffff25;background:#17282e;border-radius:3px;overflow:hidden;box-shadow:0 24px 90px #0003}.scorebar{height:66px;display:flex;align-items:center;gap:23px;padding:0 28px}.club{font-size:12px;font-weight:900;letter-spacing:1px}.club span{font-weight:400;color:#c3cccb}.coral-text{color:var(--coral)}.sky-text{color:var(--sky)}.score{display:flex;align-items:center;gap:13px;font-size:24px;font-variant-numeric:tabular-nums}.score>span{color:#597078;font-size:16px}.clock{font-size:12px;border-left:1px solid var(--line);padding-left:23px;font-variant-numeric:tabular-nums;color:var(--accent)}.connection{margin-left:auto;font-size:8px;letter-spacing:1px;color:var(--muted);display:flex;align-items:center;gap:7px}.connection i{width:5px;height:5px;border-radius:50%;background:#93a5a8}.connection i.live{background:var(--accent);box-shadow:0 0 8px #d5f55555}.pitch-wrap{position:relative;background:#24493e;aspect-ratio:1200/800;max-height:650px}.pitch-wrap canvas{display:block;width:100%;height:100%;object-fit:contain}.lobby{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:340px;max-width:90%;background:#101e24f5;border:1px solid #819b834d;padding:28px 32px 18px;box-shadow:0 25px 80px #0008;text-align:center}.lobby-kicker{font-size:7px;color:var(--accent);letter-spacing:1.7px}h2{font-size:30px;letter-spacing:-1px;margin:15px 0 10px}.lobby p{font-size:11px;color:var(--muted);line-height:1.7;margin:0 0 20px}.primary{width:100%;border:0;background:var(--accent);color:#15251e;padding:14px 17px;font-size:12px;font-weight:bold;text-align:left}.primary span{float:right}.or{display:flex;align-items:center;gap:10px;font-size:7px;color:#8b9a9d;letter-spacing:1px;margin:20px 0 14px}.or span{height:1px;background:var(--line);flex:1}form{display:flex;gap:6px}input{background:#1b2d33;border:1px solid #ffffff25;color:var(--cream);padding:12px;min-width:0;width:100%;font-size:11px;letter-spacing:2px;text-transform:uppercase}input::placeholder{color:#82989c;font-size:9px}.secondary{background:#354a4b;color:var(--cream);border:0;padding:0 18px;font-size:11px;white-space:nowrap}.practice{border:0;background:transparent;color:#afbcab;font-size:9px;margin:17px 0 0;padding:5px}.lobby .error{color:#ffab96;font-size:10px;margin:9px 0 0;min-height:12px}.game-footer{min-height:44px;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:0 22px;font-size:8px;letter-spacing:.7px;color:var(--muted)}#playerLabel{color:var(--accent);display:flex;align-items:center;gap:8px}.selected-icon{border:1px solid var(--accent);width:9px;height:9px;display:inline-block;border-radius:50%}.controls{display:flex;gap:23px;padding:22px 0;border-bottom:1px solid var(--line);justify-content:center;flex-wrap:wrap}.controls>div{display:flex;gap:7px;align-items:center}.controls span{font-size:9px;color:var(--muted)}kbd{font-family:inherit;font-size:8px;font-weight:bold;border:1px solid #677a7b75;padding:5px 7px;min-width:22px;text-align:center;border-radius:3px;color:#e1e8d8;background:#192a30}footer{display:flex;justify-content:space-between;font-size:7px;letter-spacing:1.2px;color:#76898b;padding:24px 0 30px}footer i{font-style:normal;margin:0 7px}.room-banner{padding:13px 10px;display:flex;align-items:center;gap:20px;border-bottom:1px solid var(--line);font-size:10px;color:var(--muted)}.room-banner b{font-size:15px;letter-spacing:3px;color:var(--accent);margin-left:6px}.room-banner span:last-child{margin-left:auto;font-size:9px}.match-notice{position:absolute;top:19px;left:50%;transform:translateX(-50%);background:#101d23e8;color:var(--cream);padding:12px 22px;border:1px solid #d5f58155;font-size:12px;letter-spacing:1.5px;text-align:center;max-width:95%;white-space:nowrap;pointer-events:none}dialog{max-width:480px;width:90%;background:var(--panel);color:var(--cream);border:1px solid #a2b88755;padding:30px}dialog::backdrop{background:#050c10bb;backdrop-filter:blur(5px)}dialog p{font-size:12px;line-height:1.7;color:#bac7c5}.muted{color:#8da09e!important;font-size:10px!important}.close{float:right;background:transparent;color:var(--cream);border:0;font-size:25px}.touch-controls{display:none;justify-content:space-between;gap:15px;padding:20px 5px;touch-action:none;user-select:none}.touch-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.touch-actions button{color:var(--cream);background:#233d43;border:1px solid #ffffff22;border-radius:8px;min-height:44px;min-width:60px;font-size:8px;touch-action:none}.touch-actions .shot{background:var(--accent);color:#15251e;font-weight:bold}#joystick{height:110px;width:110px;border-radius:50%;background:#21383d;border:1px solid #607b7d55;position:relative;flex-shrink:0;touch-action:none}#stick{position:absolute;width:42px;height:42px;top:34px;left:34px;background:#46615f;border:1px solid #acc19666;border-radius:50%;pointer-events:none}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}[hidden]{display:none!important}@media(pointer:coarse){.touch-controls{display:flex}.controls{display:none}}@media(max-width:700px){.app{padding:0 4%}header{height:67px}.brand{font-size:12px}.brandmark{width:26px;height:26px;font-size:23px}.edition{display:none}.intro{padding:27px 0 24px;gap:15px}.intro .eyebrow{font-size:7px;letter-spacing:1px}h1{font-size:39px;letter-spacing:-1.8px;margin:13px 0}.intro p{font-size:10px}.match-card{display:none}.scorebar{height:52px;gap:12px;padding:0 12px}.club{font-size:9px}.club span{display:none}.score{font-size:20px;gap:9px}.clock{font-size:10px;padding-left:10px}.connection{font-size:6px;letter-spacing:.4px}.pitch-wrap{aspect-ratio:1.2;min-height:350px}.lobby{padding:22px 26px 13px;width:310px}.lobby h2{font-size:27px}.game-footer{padding:0 11px;font-size:7px;gap:5px}#eventLabel{display:none}.controls{gap:13px}.room-banner{gap:8px;flex-wrap:wrap}.room-banner span:last-child{width:100%;margin:0}footer{font-size:6px;gap:20px;line-height:1.6}footer span:last-child{text-align:right}.match-notice{font-size:9px;padding:10px 12px;white-space:normal;width:max-content}.touch-actions{gap:6px}.touch-actions button{min-width:53px}}
+
+@media(max-width:360px){.touch-actions{gap:4px}.touch-actions button{min-width:46px}.touch-controls{gap:10px}.brand{font-size:10px}.brandmark{margin-right:0}.scorebar{gap:9px}.connection{font-size:5px}}
+</style></head>
+<body>
+<div class="app">
+  <header><a class="brand" href="#" aria-label="Touchline Duel home"><span class="brandmark">↗</span> TOUCHLINE <b>DUEL</b></a><span class="edition">11 A SIDE <i></i> 1 ON 1</span><button id="helpButton" class="quiet">How to play <span>?</span></button></header>
+  <main>
+    <section class="intro"><div><div class="eyebrow"><span></span> THE BEAUTIFUL GAME, STRAIGHT TO YOUR BROWSER</div><h1>Find the space.<br><em>Make the play.</em></h1><p>Two rivals. Twenty-two players. One pitch.<br>Build the move, thread the pass, take your chance.</p></div><div class="match-card"><div class="card-label">MATCHDAY / 01 <span>3 MIN MATCH</span></div><div class="versus"><div><span class="crest coral">C</span><b>CORAL FC</b></div><small>VS</small><div><span class="crest sky">S</span><b>SKY UNITED</b></div></div><div class="card-bottom"><span>4–4–2 FORMATION</span><span>FULL PITCH. FULL CONTROL.</span></div></div></section>
+    <section class="arena" aria-label="Soccer game"><div class="scorebar"><div class="club coral-text">CORAL <span>FC</span></div><div class="score"><b id="scoreA">0</b><span>:</span><b id="scoreB">0</b></div><div class="club sky-text">SKY <span>UNITED</span></div><span class="clock" id="clock">03:00</span><div class="connection"><i id="statusDot"></i><span id="status">READY TO PLAY</span></div></div>
+      <div class="pitch-wrap"><canvas id="pitch" width="1200" height="800" aria-label="Soccer pitch. Use arrow keys or WASD to move, J pass, K shoot, L through ball, Q switch, E tackle, Shift sprint."></canvas><div id="matchNotice" class="match-notice" hidden></div><div id="lobby" class="lobby"><div class="lobby-kicker">THE FIRST TOUCH IS YOURS</div><h2>Take the warm-up.</h2><p>Try movement, passing, and shooting.<br>Use the full project for online matches.</p><button class="primary" id="createButton" hidden>Create a match <span>↗</span></button><div class="or" hidden><span></span> OR JOIN A FRIEND <span></span></div><form id="joinForm" hidden><label class="sr-only" for="roomInput">Six-character room code</label><input id="roomInput" placeholder="ROOM CODE" maxlength="6" autocomplete="off" spellcheck="false" pattern="[A-Za-z0-9]{6}" required><button class="secondary" type="submit">Join →</button></form><button id="practiceButton" class="primary">Start warm-up →</button><p class="error" id="error" role="alert"></p></div></div>
+      <div class="game-footer"><span id="playerLabel"><i class="selected-icon"></i> SELECTED PLAYER</span><span id="eventLabel">A LITTLE VISION GOES A LONG WAY.</span><button class="quiet" id="leaveButton" hidden>Leave match ↗</button><button class="quiet" id="rematchButton" hidden>Play again ↗</button></div>
+    </section>
+    <div id="roomBanner" class="room-banner" hidden><span>ROOM <b id="roomCode"></b></span><button id="copyButton" class="quiet">Copy invite ↗</button><span id="roomHint">Share the code with your opponent.</span></div>
+    <div class="controls"><div><kbd>W A S D</kbd><span>Move</span></div><div><kbd>J</kbd><span>Pass</span></div><div><kbd>K</kbd><span>Hold to shoot</span></div><div><kbd>L</kbd><span>Through ball</span></div><div><kbd>Q</kbd><span>Switch</span></div><div><kbd>E</kbd><span>Tackle</span></div><div><kbd>SHIFT</kbd><span>Sprint</span></div></div>
+    <div class="touch-controls" id="touchControls"><div id="joystick" aria-label="Movement joystick"><div id="stick"></div></div><div class="touch-actions"><button data-action="switch">SWITCH</button><button data-action="tackle">TACKLE</button><button data-action="through">THROUGH</button><button data-action="pass">PASS</button><button data-action="shoot" class="shot">SHOOT</button><button id="sprintTouch">SPRINT</button></div></div>
+    <footer><span>READ THE GAME. TRUST THE PASS.</span><span>PROTOTYPE 0.1 <i>·</i> ORIGINAL TEAMS / SHARED PITCH</span></footer>
+  </main>
+</div>
+<dialog id="help"><button id="closeHelp" class="close" aria-label="Close help">×</button><div class="eyebrow">THE BASICS</div><h2>Play the space.</h2><p>You control the player with the ring. Your teammates maintain a 4–4–2 formation and offer passing options.</p><p><b>Move:</b> WASD or arrow keys. Hold Shift to sprint. On a phone, use the joystick and action buttons.</p><p><b>Pass:</b> aim with your movement direction and tap J. Control immediately switches to the intended receiver. L sends a through ball ahead of them.</p><p><b>Shoot:</b> hold K to charge, then release. Aim with movement; when standing still, the shot aims toward goal.</p><p><b>Defend:</b> Q switches to a defender near the ball. E tackles when you are close. Goalkeepers play automatically.</p><p><b>Online:</b> create a room and share its code or invite link. The match pauses if either connection drops. Both players vote to rematch.</p><p class="muted">Three-minute matches. Simplified restarts. No offside, fouls, substitutions, or aerial play in this prototype.</p></dialog>
+<script type="module">
+const W = 1050, H = 680, DURATION = 180;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const dist = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
+const unit = (x,y) => {const d=Math.hypot(x,y)||1;return [x/d,y/d];};
+const formation = [[55,340],[230,95],[200,255],[200,425],[230,585],[430,130],[385,275],[385,405],[430,550],[650,260],[650,420]];
+const roles = ['GK','LB','CB','CB','RB','LM','CM','CM','RM','ST','ST'];
+function createGame() {
+  const g={players:[],ball:{x:525,y:340,vx:0,vy:0,owner:null,lock:0,last:0},selected:[9,20],score:[0,0],clock:DURATION,phase:'kickoff',pause:1.2,message:'KICKOFF',kickTeam:0,bot:[false,false],aiTick:0};
+  for(let t=0;t<2;t++) formation.forEach(([x,y],n)=>g.players.push({id:t*11+n,team:t,n:n+1,role:roles[n],x:t?W-x:x,y,homeX:t?W-x:x,homeY:y,vx:0,vy:0,fx:t?-1:1,fy:0,stamina:1,cool:0}));
+  resetPositions(g,0);return g;
+}
+function resetPositions(g,team) {
+  for(const p of g.players){p.x=p.homeX;p.y=p.homeY;p.vx=p.vy=0;p.cool=0;}
+  const k=g.players[team*11+9];k.x=team?540:510;k.y=340;
+  const other=g.players[team*11+10];other.x=team?600:450;other.y=400;
+  for(const p of g.players) if(p.team!==team) p.x=p.team?Math.max(p.x,570):Math.min(p.x,480);
+  g.selected=[9,20];g.selected[team]=k.id;g.ball={x:k.x+(team?-12:12),y:k.y,vx:0,vy:0,owner:k.id,lock:0,last:team};
+  g.kickTeam=team;
+}
+function nearest(g,team,x,y,exclude=-1,keeper=false) {
+  return g.players.filter(p=>p.team===team&&p.id!==exclude&&(keeper||p.n!==1)).sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];
+}
+function switchPlayer(g,team) {
+  if(![0,1].includes(team)||g.phase==='ended')return;
+  const owner=g.players[g.ball.owner];
+  if(owner?.team===team){g.selected[team]=owner.id;return;}
+  const next=nearest(g,team,g.ball.x,g.ball.y,g.selected[team]);if(next)g.selected[team]=next.id;
+}
+function action(g,team,kind,aimX=0,aimY=0,power=.65) {
+  if(g.phase!=='playing'||![0,1].includes(team))return false;
+  const p=g.players[g.selected[team]], b=g.ball;
+  if(kind==='switch'){switchPlayer(g,team);return true;}
+  if(p.cool>0)return false;
+  if(kind==='tackle') {
+    p.cool=.55; const owner=g.players[b.owner];
+    if(owner&&owner.team!==team&&dist(p,owner)<32){b.owner=p.id;b.lock=.22;b.last=team;g.message='BALL WON';}
+    return true;
+  }
+  if(b.owner!==p.id)return false;
+  let dx=aimX,dy=aimY;if(Math.hypot(dx,dy)<.1){dx=p.fx;dy=p.fy;}
+  [dx,dy]=unit(dx,dy);
+  let speed=0;
+  if(kind==='pass'||kind==='through'){
+    const candidates=g.players.filter(q=>q.team===team&&q.id!==p.id&&q.n!==1).map(q=>{
+      const d=dist(p,q), dot=((q.x-p.x)*dx+(q.y-p.y)*dy)/(d||1);
+      return {q,d,dot,rank:dot*450-d*.5};
+    }).filter(q=>q.d>25&&q.d<500).sort((a,b)=>b.rank-a.rank);
+    const target=(candidates.find(c=>c.dot>.15)||candidates[0])?.q;if(!target)return false;
+    const lead=kind==='through'?100:Math.min(35,dist(p,target)/9);
+    let tx=target.x+target.vx*.22+(kind==='through'?(team?-lead:lead):0),ty=target.y+target.vy*.22;
+    [dx,dy]=unit(clamp(tx,15,W-15)-p.x,clamp(ty,15,H-15)-p.y);
+    speed=kind==='through'?520:clamp(dist(p,target)*1.1+220,350,620);
+    g.selected[team]=target.id;g.message=kind==='through'?'THROUGH BALL':'PASS';
+  }else if(kind==='shoot'){
+    power=clamp(Number(power)||.65,.2,1);
+    // Default facing shoots toward goal, directional input allows manual aiming.
+    if(Math.hypot(aimX,aimY)<.1){[dx,dy]=unit((team?0:W)-p.x,340-p.y);}
+    speed=610+power*300;g.message='SHOT';
+  }else return false;
+  b.owner=null;b.x=p.x+dx*18;b.y=p.y+dy*18;b.vx=dx*speed;b.vy=dy*speed;b.lock=.16;b.last=team;p.cool=.2;
+  return true;
+}
+function move(p,tx,ty,speed,dt) {
+  const d=Math.hypot(tx-p.x,ty-p.y);if(d<2){p.vx=p.vy=0;return;}
+  const [dx,dy]=unit(tx-p.x,ty-p.y),v=Math.min(speed,d/dt);p.vx=dx*v;p.vy=dy*v;
+  p.x=clamp(p.x+p.vx*dt,9,W-9);p.y=clamp(p.y+p.vy*dt,9,H-9);p.fx=dx;p.fy=dy;
+}
+function restart(g,team,x,y,message) {
+  const p=nearest(g,team,x,y);p.x=clamp(x,25,W-25);p.y=clamp(y,25,H-25);
+  g.ball={x:p.x,y:p.y,vx:0,vy:0,owner:p.id,lock:.5,last:team};g.selected[team]=p.id;
+  g.phase='restart';g.pause=.8;g.message=message;
+  for(const q of g.players)if(q.team!==team&&dist(p,q)<70)q.x=clamp(q.x+(q.team?-75:75),15,W-15);
+}
+function step(g,inputs=[{},{}],dt=1/30) {
+  dt=clamp(dt,0,.05);if(g.phase==='ended')return;
+  if(g.phase!=='playing'){
+    g.pause-=dt;if(g.pause<=0){g.phase='playing';g.message='PLAY';}return;
+  }
+  g.clock=Math.max(0,g.clock-dt);if(g.clock<=0){g.phase='ended';g.message=g.score[0]===g.score[1]?'FULL TIME · DRAW':`FULL TIME · ${g.score[0]>g.score[1]?'CORAL':'SKY'} WINS`;return;}
+  g.aiTick+=dt;const b=g.ball; b.lock=Math.max(0,b.lock-dt);
+  const owner=g.players[b.owner], possession=owner?.team;
+  const chasers=[nearest(g,0,b.x,b.y),nearest(g,1,b.x,b.y)];
+  for(const p of g.players){
+    p.cool=Math.max(0,p.cool-dt);
+    const inp=inputs[p.team]||{};
+    if(p.id===g.selected[p.team]&&!g.bot[p.team]){
+      let dx=Number.isFinite(inp.x)?clamp(inp.x,-1,1):0,dy=Number.isFinite(inp.y)?clamp(inp.y,-1,1):0;
+      if(Math.hypot(dx,dy)>1)[dx,dy]=unit(dx,dy);
+      const sprint=inp.sprint&&p.stamina>.03;
+      p.stamina=clamp(p.stamina+(sprint?-.22:.14)*dt,0,1);
+      const speed=(sprint?205:145)*(b.owner===p.id?.94:1);
+      p.vx=dx*speed;p.vy=dy*speed;p.x=clamp(p.x+p.vx*dt,9,W-9);p.y=clamp(p.y+p.vy*dt,9,H-9);
+      if(Math.hypot(dx,dy)>.01){[p.fx,p.fy]=unit(dx,dy);}continue;
+    }
+    let tx=p.homeX,ty=p.homeY,speed=125;
+    const sign=p.team?-1:1;
+    if(p.n===1){
+      if(b.owner===p.id&&g.aiTick>1.05){g.selected[p.team]=p.id;action(g,p.team,'pass',sign,0);}
+      tx=p.team?W-40:40;ty=clamp(340+(b.y-340)*.48,270,410);speed=155;
+      if(b.x<(p.team?W:150)&&b.x>(p.team?W-150:0)&&Math.abs(b.y-340)<150&&(!owner||possession!==p.team)){tx=clamp(b.x,p.team?W-100:20,p.team?W-20:100);ty=b.y;}
+    }else if(owner?.id===p.id){
+      tx=p.team?55:W-55;ty=340+(p.homeY-340)*.2;speed=125;
+      if(p.cool===0){
+        if(Math.abs(p.x-(p.team?0:W))<280){g.selected[p.team]=p.id;action(g,p.team,'shoot',0,0,.7);}
+        else if(g.aiTick>1.1&&g.players.some(q=>q.team!==p.team&&dist(p,q)<50)){g.selected[p.team]=p.id;action(g,p.team,'pass',sign,0);}
+      }
+    }else if((!owner||possession!==p.team)&&chasers[p.team]?.id===p.id){tx=b.x;ty=b.y;speed=153;}
+    else{
+      const advance=possession===p.team?85:possession===undefined?0:-55;
+      tx=clamp(p.homeX+(b.x-525)*.32+sign*advance,75,W-75);
+      ty=clamp(p.homeY+(b.y-340)*.26,30,H-30);
+    }
+    move(p,tx,ty,speed,dt);
+    // Only the active pressing defender tackles automatically, at close range.
+    const current=g.players[b.owner];
+    if(current&&current.team!==p.team&&p.cool===0&&dist(p,current)<18){b.owner=p.id;b.last=p.team;b.lock=.25;p.cool=.7;}
+  }
+  // Soft player separation prevents a pile-up around the ball.
+  for(let i=0;i<g.players.length;i++)for(let j=i+1;j<g.players.length;j++){
+    const a=g.players[i],c=g.players[j],d=dist(a,c);if(d<17){const [dx,dy]=unit(c.x-a.x||.1,c.y-a.y);const n=(17-d)*.25;a.x=clamp(a.x-dx*n,9,W-9);a.y=clamp(a.y-dy*n,9,H-9);c.x=clamp(c.x+dx*n,9,W-9);c.y=clamp(c.y+dy*n,9,H-9);}
+  }
+  if(b.owner!==null){const p=g.players[b.owner];b.x=p.x+p.fx*12;b.y=p.y+p.fy*12;b.vx=p.vx;b.vy=p.vy;}
+  else{
+    const oldX=b.x,oldY=b.y;b.x+=b.vx*dt;b.y+=b.vy*dt;const drag=Math.exp(-.48*dt);b.vx*=drag;b.vy*=drag;
+    // Swept collision: fast shots cannot tunnel through a keeper or defender.
+    if(b.lock<=0){const candidates=[];const vx=b.x-oldX,vy=b.y-oldY,len=vx*vx+vy*vy;
+      for(const p of g.players){const t=len?clamp(((p.x-oldX)*vx+(p.y-oldY)*vy)/len,0,1):0;const d=Math.hypot(p.x-(oldX+t*vx),p.y-(oldY+t*vy));
+        const radius=p.n===1?22:12;if(d<radius&&!(p.cool>0&&p.team===b.last))candidates.push({p,t});}
+      candidates.sort((a,c)=>a.t-c.t);if(candidates.length){const p=candidates[0].p;b.owner=p.id;b.x=p.x+p.fx*12;b.y=p.y+p.fy*12;b.last=p.team;b.lock=.1;if(p.n!==1)g.selected[p.team]=p.id;}
+    }
+  }
+  if(b.x<0||b.x>W){
+    if(b.y>H/2-75&&b.y<H/2+75){const scorer=b.x>W?0:1;g.score[scorer]++;g.phase='goal';g.pause=2;g.message=`GOAL · ${scorer===0?'CORAL':'SKY'}`;resetPositions(g,1-scorer);}
+    else{const defending=b.x<0?0:1;if(b.last===defending)restart(g,1-defending,b.x<0?18:W-18,b.y<H/2?18:H-18,'CORNER');else restart(g,defending,b.x<0?95:W-95,340,'GOAL KICK');}
+  }else if(b.y<0||b.y>H)restart(g,1-b.last,b.x,b.y<0?12:H-12,'THROW IN');
+  if(g.aiTick>1.1)g.aiTick=0;
+}
+
+const $=id=>document.getElementById(id),canvas=$('pitch'),ctx=canvas.getContext('2d');
+const COLORS=['#ff836b','#8acbea'];let game=createGame(),mode='lobby',team=0,session=null,stream=null,connected=false,onlineStatus='waiting',lastPacket=0,lastTime=0,accumulator=0,chargeStart=0,noticeUntil=0,lastMessage='',inputBusy=false;
+const keys=new Set(),touch={x:0,y:0,sprint:false},renderPositions=new Map();
+let input={x:0,y:0,sprint:false};const ox=75,oy=60;canvas.width=2400;canvas.height=1600;ctx.scale(2,2);
+function readInput(){let x=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0),y=(keys.has('s')||keys.has('arrowdown')?1:0)-(keys.has('w')||keys.has('arrowup')?1:0);if(touch.x||touch.y){x=touch.x;y=touch.y;}return {x,y,sprint:keys.has('shift')||touch.sprint};}
+function uiStatus(label,live=false){$('status').textContent=label;$('statusDot').classList.toggle('live',live);}
+async function api(path,data={},auth=true){const u=new URL(path,location.href);if(auth&&session)u.searchParams.set('room',session.room);const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json',...(auth&&session?{Authorization:`Bearer ${session.token}`}:{})},body:JSON.stringify(data)});const v=await r.json();if(!r.ok)throw new Error(v.error||'Connection failed');return v;}
+function notify(message){$('matchNotice').textContent=message;$('matchNotice').hidden=false;noticeUntil=performance.now()+2500;}
+function sendAction(kind,power=.65){if(mode==='lobby')return;if(mode==='practice'){action(game,team,kind,input.x,input.y,power);return;}if(!connected)return;api('/api/action',{kind,x:input.x,y:input.y,power}).catch(e=>notify(e.message));}
+function clearInput(){keys.clear();touch.x=touch.y=0;touch.sprint=false;input=readInput();chargeStart=0;$('stick').style.transform='';if(mode==='online')api('/api/input',input).catch(()=>{});}
+function enterPractice(){leave(false);mode='practice';team=0;game=createGame();game.bot=[false,true];renderPositions.clear();$('lobby').hidden=true;$('leaveButton').hidden=false;$('roomBanner').hidden=true;uiStatus('WARM UP · VS COMPUTER',true);}
+function connect(s){session=s;mode='online';team=s.team;connected=false;onlineStatus='waiting';renderPositions.clear();try{sessionStorage.setItem('touchline-session',JSON.stringify(s));}catch{}$('lobby').hidden=true;$('leaveButton').hidden=false;$('roomBanner').hidden=false;$('roomCode').textContent=s.room;$('roomHint').textContent='Share the code with your opponent.';uiStatus('CONNECTING');
+  stream=new EventSource(`/api/events?room=${encodeURIComponent(s.room)}&token=${encodeURIComponent(s.token)}`);
+  stream.onmessage=e=>{const data=JSON.parse(e.data);game=data.game;lastPacket=performance.now();connected=true;onlineStatus=data.status;uiStatus(data.status==='connected'?'LIVE MATCH':data.status==='waiting'?'WAITING FOR RIVAL':'MATCH PAUSED',data.status==='connected');$('roomHint').textContent=data.status==='waiting'?'Waiting for your opponent to join.':data.status==='paused'?'Opponent disconnected. The match is paused.':'You are '+(team===0?'Coral FC · attack right →':'Sky United · attack left ←');if(data.rematch?.[team])$('rematchButton').textContent='Waiting for rival…';};
+  stream.onerror=()=>{connected=false;uiStatus('RECONNECTING');notify('Connection lost. Reconnecting… Match paused.');};
+}
+async function startRoom(join=false){$('error').textContent='';if(location.protocol==='file:'){notify('This downloaded demo supports warm-up. Run the included project for online rooms.');$('error').textContent='Online rooms require the included Node server.';return;}
+  $('createButton').disabled=true;$('joinForm').querySelector('button').disabled=true;
+  try{const s=await api(join?'/api/join':'/api/create',join?{room:$('roomInput').value}:{},false);connect(s);}catch(e){$('error').textContent=e.message;}finally{$('createButton').disabled=false;$('joinForm').querySelector('button').disabled=false;}
+}
+function leave(showLobby=true){if(stream){stream.close();stream=null;}if(session){api('/api/leave').catch(()=>{});session=null;}try{sessionStorage.removeItem('touchline-session');}catch{}mode='lobby';connected=false;clearInput();if(showLobby){game=createGame();renderPositions.clear();$('lobby').hidden=false;$('roomBanner').hidden=true;$('leaveButton').hidden=true;$('rematchButton').hidden=true;$('matchNotice').hidden=true;uiStatus('READY TO PLAY');}}
+$('createButton').onclick=()=>startRoom();$('joinForm').onsubmit=e=>{e.preventDefault();startRoom(true);};$('practiceButton').onclick=enterPractice;$('leaveButton').onclick=()=>leave();
+$('rematchButton').onclick=()=>{if(mode==='practice'){game=createGame();game.bot=[false,true];$('rematchButton').hidden=true;}else api('/api/rematch').catch(e=>notify(e.message));};
+$('copyButton').onclick=async()=>{const link=new URL(location.href);link.search='';link.searchParams.set('room',session.room);try{await navigator.clipboard.writeText(link.href);$('copyButton').textContent='Invite copied ✓';setTimeout(()=>$('copyButton').textContent='Copy invite ↗',2000);}catch{notify(`Share room code: ${session.room}`);}};
+$('helpButton').onclick=()=>{clearInput();$('help').showModal();};$('closeHelp').onclick=()=>$('help').close();
+document.querySelector('.brand').onclick=e=>{e.preventDefault();if(mode==='lobby')window.scrollTo({top:0,behavior:'smooth'});else notify('Use Leave match to return to the lobby.');};
+addEventListener('keydown',e=>{if(e.target.matches('input')||$('help').open)return;const k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' ','shift'].includes(k))e.preventDefault();keys.add(k);input=readInput();if(e.repeat)return;const map={j:'pass',l:'through',q:'switch',e:'tackle'};if(map[k])sendAction(map[k]);if(k==='k'&&mode!=='lobby')chargeStart=performance.now();});
+addEventListener('keyup',e=>{const k=e.key.toLowerCase();keys.delete(k);input=readInput();if(k==='k'&&chargeStart){sendAction('shoot',Math.min(1,.2+(performance.now()-chargeStart)/900));chargeStart=0;}});
+addEventListener('blur',clearInput);document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInput();});
+const joystick=$('joystick');let pointer=null;
+function joystickMove(e){if(e.pointerId!==pointer)return;const r=joystick.getBoundingClientRect(),dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,d=Math.hypot(dx,dy),scale=Math.min(1,36/(d||1));touch.x=dx*scale/36;touch.y=dy*scale/36;$('stick').style.transform=`translate(${dx*scale}px,${dy*scale}px)`;input=readInput();}
+joystick.onpointerdown=e=>{e.preventDefault();pointer=e.pointerId;joystick.setPointerCapture(pointer);joystickMove(e);};joystick.onpointermove=joystickMove;
+function releaseJoystick(){pointer=null;touch.x=touch.y=0;$('stick').style.transform='';input=readInput();}joystick.onpointerup=releaseJoystick;joystick.onpointercancel=releaseJoystick;
+for(const button of document.querySelectorAll('[data-action]')){button.onpointerdown=e=>{e.preventDefault();button.setPointerCapture(e.pointerId);input=readInput();if(button.dataset.action==='shoot')chargeStart=performance.now();else sendAction(button.dataset.action);};button.onpointerup=e=>{e.preventDefault();if(button.dataset.action==='shoot'&&chargeStart){sendAction('shoot',Math.min(1,.2+(performance.now()-chargeStart)/900));chargeStart=0;}};button.onpointercancel=()=>{chargeStart=0;};}
+$('sprintTouch').onpointerdown=e=>{e.preventDefault();e.target.setPointerCapture(e.pointerId);touch.sprint=true;};for(const k of ['onpointerup','onpointercancel'])$('sprintTouch')[k]=()=>touch.sprint=false;
+setInterval(()=>{input=readInput();if(mode==='online'&&connected&&!inputBusy){inputBusy=true;api('/api/input',input).catch(()=>{connected=false;}).finally(()=>inputBusy=false);}},50);
+function line(x1,y1,x2,y2,color='#c7dec682',width=1.7){ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
+function circle(x,y,r,fill,stroke,width=1.5){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke();}}
+function pitch(){
+  ctx.clearRect(0,0,1200,800);ctx.fillStyle='#1d3934';ctx.fillRect(0,0,1200,800);
+  // Stadium apron with restrained technical details.
+  for(let i=0;i<20;i++){ctx.fillStyle=i%2?'#28463c':'#27443c';ctx.fillRect(ox+i*W/20,oy,W/20,H);}
+  ctx.fillStyle='#325344';ctx.fillRect(ox-24,oy-24,W+48,16);ctx.fillRect(ox-24,oy+H+8,W+48,16);
+  ctx.font='bold 8px Arial';ctx.textAlign='center';ctx.fillStyle='#9fb48a';for(let i=0;i<5;i++){ctx.fillText(i%2?'MAKE THE PLAY':'TOUCHLINE DUEL',ox+95+i*215,oy-13);ctx.fillText(i%2?'TOUCHLINE DUEL':'READ THE GAME',ox+95+i*215,oy+H+19);}
+  ctx.save();ctx.translate(ox,oy);ctx.strokeStyle='#c7dec682';ctx.lineWidth=1.7;ctx.strokeRect(0,0,W,H);line(W/2,0,W/2,H);circle(W/2,H/2,91,null,'#c7dec682');circle(W/2,H/2,3,'#c7dec6');
+  ctx.strokeRect(0,138,165,404);ctx.strokeRect(W-165,138,165,404);ctx.strokeRect(0,248,55,184);ctx.strokeRect(W-55,248,55,184);circle(110,340,2.4,'#c7dec6');circle(W-110,340,2.4,'#c7dec6');
+  ctx.beginPath();ctx.arc(110,340,91,-.93,.93);ctx.stroke();ctx.beginPath();ctx.arc(W-110,340,91,Math.PI-.93,Math.PI+.93);ctx.stroke();
+  for(const x of [0,W]){const gx=x===0?-24:W;ctx.fillStyle='#b5c3b516';ctx.fillRect(gx,265,24,150);ctx.strokeStyle='#dae3d6aa';ctx.strokeRect(gx,265,24,150);for(let y=270;y<415;y+=10)line(gx,y,gx+24,y,'#dce9dd22',.7);for(let z=6;z<24;z+=6)line(gx+z,265,gx+z,415,'#dce9dd22',.7);}
+  ctx.restore();ctx.fillStyle='#a6bd9644';ctx.textAlign='left';ctx.font='8px Arial';ctx.fillText('CORAL FC   →',ox,oy+H+43);ctx.textAlign='right';ctx.fillText('←   SKY UNITED',ox+W,oy+H+43);
+}
+function draw(now){pitch();const active=game.players[game.selected[team]];const fade=mode==='lobby'?.65:1;ctx.globalAlpha=fade;
+  // Directional pass hint; only visible for the current ball carrier.
+  if(mode!=='lobby'&&game.ball.owner===active?.id){const d=Math.hypot(input.x,input.y)||1,dx=input.x||(!input.y?active.fx:0),dy=input.y||(!input.x?active.fy:0);ctx.setLineDash([5,6]);line(ox+active.x,oy+active.y,ox+active.x+dx/d*65,oy+active.y+dy/d*65,'#d5f58188',1);ctx.setLineDash([]);}
+  for(const p of [...game.players].sort((a,b)=>a.y-b.y)){
+    let v=renderPositions.get(p.id);if(!v||Math.hypot(v.x-p.x,v.y-p.y)>120)v={x:p.x,y:p.y};const blend=mode==='online'?.55:1;v.x+=(p.x-v.x)*blend;v.y+=(p.y-v.y)*blend;renderPositions.set(p.id,v);
+    const x=ox+v.x,y=oy+v.y,selected=mode!=='lobby'&&p.id===game.selected[team],opponent=mode==='online'&&p.id===game.selected[1-team];
+    ctx.save();ctx.translate(x,y);circle(1,5,11,'#07191155');if(selected){circle(0,0,15,null,'#d5f581',2);ctx.fillStyle='#d5f581';ctx.beginPath();ctx.moveTo(-4,-24);ctx.lineTo(4,-24);ctx.lineTo(0,-18);ctx.fill();}if(opponent)circle(0,0,14,null,'#ffffff66',1);
+    circle(0,0,9,p.n===1?'#e4c76f':COLORS[p.team],'#112c30',1.5);line(p.fx*5,p.fy*5,p.fx*10,p.fy*10,'#172d34',2.8);
+    ctx.font='bold 8px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#142b30';ctx.fillText(p.n,0,1);
+    if(selected){ctx.fillStyle='#10251c';ctx.fillRect(-13,19,26,3);ctx.fillStyle='#d5f581';ctx.fillRect(-13,19,26*p.stamina,3);}ctx.restore();
+  }
+  const b=game.ball;circle(ox+b.x+2,oy+b.y+3,5,'#001b1955');circle(ox+b.x,oy+b.y,4.5,'#faf9e8','#182d2c',1.1);circle(ox+b.x+.6,oy+b.y-.4,1.5,'#405249');ctx.globalAlpha=1;
+  if(chargeStart&&mode!=='lobby'&&active){const power=Math.min(1,(now-chargeStart)/900);ctx.fillStyle='#10211d';ctx.fillRect(ox+active.x-25,oy+active.y-38,50,5);ctx.fillStyle=power>.8?'#ff836b':'#d5f581';ctx.fillRect(ox+active.x-25,oy+active.y-38,50*power,5);}
+  $('scoreA').textContent=game.score[0];$('scoreB').textContent=game.score[1];const seconds=Math.ceil(game.clock);$('clock').textContent=`${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;
+  if(mode!=='lobby'){
+    $('playerLabel').innerHTML=`<i class="selected-icon"></i> ${team===0?'CORAL':'SKY'} · #${active.n} ${active.role}`;
+    $('eventLabel').textContent=game.message;
+    let persistent='';if(mode==='online'&&!connected)persistent='RECONNECTING · MATCH PAUSED';else if(mode==='online'&&onlineStatus==='waiting')persistent=`ROOM ${session.room} · WAITING FOR YOUR RIVAL`;else if(mode==='online'&&onlineStatus==='paused')persistent='OPPONENT DISCONNECTED · MATCH PAUSED';else if(game.phase!=='playing')persistent=game.message;
+    if(persistent){$('matchNotice').textContent=persistent;$('matchNotice').hidden=false;}else if(now>noticeUntil)$('matchNotice').hidden=true;
+    $('rematchButton').hidden=game.phase!=='ended';if(game.phase!=='ended')$('rematchButton').textContent='Play again ↗';
+  }
+}
+function frame(now){const elapsed=Math.min((now-lastTime)/1000,.1);lastTime=now;input=readInput();if(mode==='practice'){accumulator+=elapsed;let n=0;while(accumulator>=1/60&&n++<6){step(game,[input,{}],1/60);accumulator-=1/60;}}else accumulator=0;if(mode==='online'&&connected&&now-lastPacket>3000){connected=false;uiStatus('RECONNECTING');}draw(now);requestAnimationFrame(frame);}
+const room=new URLSearchParams(location.search).get('room');if(room)$('roomInput').value=room.slice(0,6).toUpperCase();
+try{const s=JSON.parse(sessionStorage.getItem('touchline-session'));if(false)connect(s);}catch{}
+requestAnimationFrame(frame);
+
+</script>
+</body></html>
