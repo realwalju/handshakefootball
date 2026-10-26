@@ -1,9 +1,10 @@
 # Touchline Duel playtest
 
-## Current verification (October 25, 2026)
+## Current verification (October 26, 2026)
 
 - Imported the complete project from `handshakefootball.bundle` and preserved it locally.
-- All 22 automated tests pass on Windows with Node.js 24.22.1, including 3D model/animation and full-pitch camera framing checks.
+- All 31 automated tests pass on Windows with Node.js 24.22.1. The movement update adds acceleration/braking, independent supporting runs, pressing/cover, pass-and-move, receiving assistance with manual override, quick passes after ball wins, deterministic decisions, and compatibility with existing rooms.
+- The real Postgres integration check also passed with the movement update before publication.
 - The basic 3D view was visually checked in Chrome on the local preview: full-pitch and follow-ball cameras, animated players, defender switching, and a warm-up reaching full time. Switching back to 2D retained the same clock, score, and match state. Phone/GPU performance and two physical devices still need a hands-on comparison.
 - Fixed a Windows line-ending assumption in the client test harness.
 - Verified both teams can switch defenders and transfer control with through balls.
@@ -31,6 +32,10 @@
 ## Basic 3D comparison
 
 Open https://soccer.walju.net/?view=3d or select **Try 3D** above the pitch. Start warm-up, then compare **Camera: wide** with **Camera: follow ball**. Check the animated players, ball visibility, selection marker, stamina, and shot charge. Pass with J, switch with Q, and try a charged shot with K. Switch back to **2D** during play; score, clock, and session should continue. For online play, let one rival use 3D and the other use 2D, then compare their score and selected players. Test phone performance separately.
+
+## Movement feel
+
+Carry the ball without sprinting and watch supporting midfielders and runners; they should offer different angles. Play a through ball and briefly release movement: the receiver should keep running, while the passer supports forward. Steer the receiver to override assistance. On defense, check that one player presses while others cover or follow runners. Compare starts, stops, and direction changes with the previous instant movement. Check that a goalkeeper distributes possession even after a save or tackle cooldown.
 
 For same-computer testing, open two independently created tabs or different browsers. Avoid duplicating an existing match tab: browsers can copy its saved player session.
 

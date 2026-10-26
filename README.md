@@ -4,7 +4,15 @@
 
 [Try the basic 3D version](https://soccer.walju.net/?view=3d). Use **Try 3D** above the pitch to switch views during warm-up or an online match. The **Camera** button switches between a full-pitch view and a closer camera following the ball. **2D** switches back without restarting the match.
 
-A first playable soccer prototype: two human rivals, each controlling a full team of eleven. Passes switch control to their intended receiver; the remaining footballers maintain a simple 4–4–2 shape.
+A playable soccer prototype: two human rivals, each controlling a full team of eleven. Passes switch control to their intended receiver; teammates build passing angles, make runs, and defend from a flexible 4–4–2 base.
+
+## Movement and team play
+
+Players accelerate, brake, and turn with momentum. Off the ball, they make individual decisions: midfielders show for a pass, forwards alternate channel runs and dropping short, wingers hold width or cut inside, and a fullback can overlap on the ball side. The defending team commits a presser, keeps cover behind them, and tracks runners instead of sending everyone toward the ball.
+
+After a pass, the passer makes a forward supporting run. The intended receiver continues toward the ball while you are not steering; movement input immediately takes priority. Passing targets account for space and blocked lanes. When an AI defender wins possession, control transfers to that player; goalkeepers settle and distribute the ball automatically. Quick passes are available after a ball win while repeated tackles still need recovery time.
+
+The 3D gait follows actual travel speed, with separate stride phases, bent knees/elbows, and easing in and out of motion. A short visual extrapolation smooths online snapshots without changing authoritative match state. These are prototype football behaviors, not a professional simulation; feel and team balance still need playtesting.
 
 ## Run the multiplayer game
 
@@ -101,7 +109,7 @@ npm ci
 npm test
 ```
 
-The 22-test automated suite covers team composition, possession restrictions, pass/control transfer, fast-shot interception, goals, restarts, keeper distribution, full-match numerical stability, two-player room authentication/synchronization/disconnect/rematch, cross-instance room updates, the polling client, 3D models and animation, camera framing, and a 2D fallback without WebGL. A separate real-database integration check is available after the Neon integration is connected:
+The 31-test automated suite covers team composition, possession restrictions, pass/control transfer, fast-shot interception, goals, restarts, keeper distribution, full-match numerical stability, two-player room authentication/synchronization/disconnect/rematch, cross-instance room updates, the polling client, 3D models and animation, camera framing, a 2D fallback without WebGL, acceleration/braking, independent support, defensive cover, receiving assistance/manual override, and deterministic movement. A separate real-database integration check is available after the Neon integration is connected:
 
 ```sh
 npx vercel env pull .env.local

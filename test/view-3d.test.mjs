@@ -18,7 +18,10 @@ test('3D models map pitch coordinates, face movement and animate without mutatin
   const model=createPlayerModel(player);updatePlayerModel(model,player,1000);
   assert.equal(model.position.x,10);assert.equal(model.position.z,-5);assert.ok(Math.abs(model.rotation.y-Math.PI/2)<1e-9);
   assert.notEqual(model.userData.limbs[0].leg.rotation.x,0);assert.equal(JSON.stringify(player),before);
-  updatePlayerModel(model,{...player,vx:0},1100);assert.equal(Math.abs(model.userData.limbs[0].leg.rotation.x),0);
+  const moving=Math.abs(model.userData.limbs[0].leg.rotation.x);updatePlayerModel(model,{...player,vx:0},1100);
+  assert.ok(Math.abs(model.userData.limbs[0].leg.rotation.x)<moving);
+  for(let i=0;i<60;i++)updatePlayerModel(model,{...player,vx:0},1200+i*17);
+  assert.ok(Math.abs(model.userData.limbs[0].leg.rotation.x)<.001);
 });
 test('wide 3D camera keeps both goals and the full pitch in frame across viewport shapes',()=>{
   for(const aspect of [.75,1.2,1.5,2]){

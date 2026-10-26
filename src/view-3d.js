@@ -7,7 +7,8 @@ const solid=color=>new THREE.MeshStandardMaterial({color,roughness:.9,flatShadin
 const white=solid(0xf0f1dd),dark=solid(0x203039);
 const shapes={
   body:new THREE.CapsuleGeometry(.43,.72,3,8),head:new THREE.SphereGeometry(.32,8,6),
-  limb:new THREE.CylinderGeometry(.13,.12,.75,6),boot:new THREE.BoxGeometry(.28,.17,.48),
+  boot:new THREE.BoxGeometry(.28,.17,.48),
+  upper:new THREE.CylinderGeometry(.135,.12,.4,6),lower:new THREE.CylinderGeometry(.12,.1,.37,6),
   shorts:new THREE.BoxGeometry(.75,.4,.54),hair:new THREE.SphereGeometry(.335,8,4,0,Math.PI*2,0,Math.PI/2)
 };
 function mesh(geometry,material,parent,x=0,y=0,z=0){
@@ -27,27 +28,37 @@ export function createPlayerModel(player){
   const limbs=[];
   for(const side of [-1,1]){
     const arm=new THREE.Group();arm.position.set(side*.54,1.93,0);body.add(arm);
-    mesh(shapes.limb,skin,arm,0,-.37);arm.rotation.z=side*.12;
+    mesh(shapes.upper,shirt,arm,0,-.2);arm.rotation.z=side*.12;
+    const elbow=new THREE.Group();elbow.position.y=-.4;arm.add(elbow);mesh(shapes.lower,skin,elbow,0,-.18);
     const leg=new THREE.Group();leg.position.set(side*.22,.8,0);root.add(leg);
-    mesh(shapes.limb,white,leg,0,-.36);mesh(shapes.boot,dark,leg,0,-.73,.11);
-    limbs.push({arm,leg,side});
+    mesh(shapes.upper,dark,leg,0,-.2);const knee=new THREE.Group();knee.position.y=-.4;leg.add(knee);
+    mesh(shapes.lower,white,knee,0,-.18);mesh(shapes.boot,dark,knee,0,-.33,.11);
+    limbs.push({arm,leg,side,knee,elbow});
   }
   const shadow=mesh(new THREE.CircleGeometry(.88,16),new THREE.MeshBasicMaterial({color:0x071d22,transparent:true,opacity:.2,depthWrite:false}),root,0,.045);
   shadow.rotation.x=-Math.PI/2;
-  root.userData={body,limbs,initialized:false,jerseyNumber:player.n};
+  root.userData={body,limbs,initialized:false,jerseyNumber:player.n,gaitPhase:player.id*2.39996,moveBlend:0};
   return root;
 }
 
-export function updatePlayerModel(model,player,now,dt=1/60,interpolate=false){
-  const x=(player.x-W/2)*SCALE,z=(player.y-H/2)*SCALE;
+export function updatePlayerModel(model,player,now,dt=1/60,interpolate=false,prediction=0){
+  const x=(THREE.MathUtils.clamp(player.x+player.vx*prediction,9,W-9)-W/2)*SCALE,z=(THREE.MathUtils.clamp(player.y+player.vy*prediction,9,H-9)-H/2)*SCALE;
   const blend=interpolate?1-Math.exp(-22*dt):1;
-  if(!model.userData.initialized||Math.hypot(model.position.x-x,model.position.z-z)>12){model.position.set(x,0,z);model.userData.initialized=true;}
+  const fresh=!model.userData.initialized||Math.hypot(model.position.x-x,model.position.z-z)>12;
+  if(fresh){model.position.set(x,0,z);model.userData.initialized=true;model.rotation.y=Math.atan2(player.fx,player.fy);}
   else{model.position.x+=(x-model.position.x)*blend;model.position.z+=(z-model.position.z)*blend;}
   const direction=Math.atan2(player.fx,player.fy),delta=direction-model.rotation.y;
-  model.rotation.y+=Math.atan2(Math.sin(delta),Math.cos(delta))*blend;
-  const speed=Math.hypot(player.vx,player.vy),stride=Math.min(speed/145,1.4),phase=now*.012+player.id*.7;
-  model.userData.body.position.y=Math.abs(Math.sin(phase))*.065*stride;
-  for(const {arm,leg,side} of model.userData.limbs){leg.rotation.x=Math.sin(phase)*.52*stride*side;arm.rotation.x=-Math.sin(phase)*.42*stride*side;}
+  const turn=Math.atan2(Math.sin(delta),Math.cos(delta));model.rotation.y+=turn*(1-Math.exp(-14*dt));
+  const speed=Math.hypot(player.vx,player.vy),targetStride=Math.min(speed/145,1.35);
+  model.userData.moveBlend+=(targetStride-model.userData.moveBlend)*(1-Math.exp(-10*dt));
+  model.userData.gaitPhase+=speed/(72+player.id%5*3)*Math.PI*2*dt;
+  const phase=model.userData.gaitPhase,stride=model.userData.moveBlend,body=model.userData.body;
+  body.position.y=Math.abs(Math.sin(phase))*.055*stride;body.position.x=Math.sin(phase)*.025*stride;
+  body.rotation.x=.12*stride;body.rotation.y=THREE.MathUtils.clamp(turn,-.5,.5)*.35*stride;
+  for(const {arm,leg,side,knee,elbow} of model.userData.limbs){
+    const swing=Math.sin(phase)*side;leg.rotation.x=swing*.55*stride;arm.rotation.x=-swing*.42*stride;
+    knee.rotation.x=Math.max(0,-swing)*.75*stride;elbow.rotation.x=-.5*stride;
+  }
 }
 
 function pitchMarkings(){
@@ -161,7 +172,7 @@ export function create3DView(canvas,onUnavailable=()=>{}){
   renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
   const world=createWorld();addJerseyNumbers(world.players);
-  let cameraMode='wide',lastTime=0;const focus=new THREE.Vector3(),direction=new THREE.Vector3();
+  let cameraMode='wide',lastTime=0,lastGame=null,snapshotAt=0;const focus=new THREE.Vector3(),direction=new THREE.Vector3();
   const resize=()=>{
     const rect=canvas.parentElement.getBoundingClientRect(),width=Math.max(1,Math.round(rect.width)),height=Math.max(1,Math.round(rect.height));
     renderer.setSize(width,height,false);world.camera.aspect=width/height;world.camera.updateProjectionMatrix();
@@ -173,7 +184,9 @@ export function create3DView(canvas,onUnavailable=()=>{}){
     setCameraMode(value){cameraMode=value;resize();},
     render(game,{team=0,mode='lobby',input={},chargeStart=0,now=0}={}){
       const dt=Math.min(.1,Math.max(1/240,(now-lastTime)/1000));lastTime=now;
-      for(const player of game.players){const model=world.players.get(player.id);if(model)updatePlayerModel(model,player,now,dt,mode==='online');}
+      if(game!==lastGame){lastGame=game;snapshotAt=now;}
+      const prediction=mode==='online'&&game.phase==='playing'?Math.min(.1,(now-snapshotAt)/1000):0;
+      for(const player of game.players){const model=world.players.get(player.id),pose=game.phase==='playing'?player:{...player,vx:0,vy:0};if(model)updatePlayerModel(model,pose,now,dt,mode==='online',prediction);}
       const active=world.players.get(game.selected[team]),rival=world.players.get(game.selected[1-team]);
       world.selected.visible=mode!=='lobby';world.opponent.visible=mode==='online';
       world.selected.position.copy(active.position);world.opponent.position.copy(rival.position);
@@ -182,7 +195,7 @@ export function create3DView(canvas,onUnavailable=()=>{}){
       const stamina=game.players[game.selected[team]].stamina;world.energyFill.scale.x=Math.max(.01,stamina);world.energyFill.position.x=-(1-stamina)*1.05;
       world.charge.visible=!!chargeStart&&mode!=='lobby';world.charge.position.copy(active.position);world.charge.position.y=4.15;
       const power=Math.min(1,Math.max(0,(now-chargeStart)/900));world.chargeFill.scale.x=Math.max(.01,power);world.chargeFill.position.x=-(1-power)*1.45;
-      const bx=(game.ball.x-W/2)*SCALE,bz=(game.ball.y-H/2)*SCALE,blend=mode==='online'?1-Math.exp(-25*dt):1;
+      const bx=(game.ball.x+game.ball.vx*prediction-W/2)*SCALE,bz=(game.ball.y+game.ball.vy*prediction-H/2)*SCALE,blend=mode==='online'?1-Math.exp(-25*dt):1;
       if(Math.hypot(world.ball.position.x-bx,world.ball.position.z-bz)>12)world.ball.position.set(bx,.58,bz);
       else{world.ball.position.x+=(bx-world.ball.position.x)*blend;world.ball.position.z+=(bz-world.ball.position.z)*blend;}
       world.ball.rotation.z-=game.ball.vx*SCALE*dt/.55;world.ball.rotation.x+=game.ball.vy*SCALE*dt/.55;
