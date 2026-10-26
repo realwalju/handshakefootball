@@ -7,7 +7,7 @@ import {createGame,step,action} from './public/engine.js';
 export function createServer(){
   const rooms=new Map();const root=new URL('./public/',import.meta.url);
   function fail(status,message){return Object.assign(new Error(message),{status});}
-  async function body(req){let raw='';for await(const part of req){raw+=part;if(raw.length>4096)throw fail(413,'Request too large');}try{return JSON.parse(raw||'{}');}catch{throw fail(400,'Invalid JSON');}}
+  async function body(req){const chunks=[];let size=0;for await(const part of req){size+=part.length;if(size>4096)throw fail(413,'Request too large');chunks.push(part);}let data;try{data=JSON.parse(Buffer.concat(chunks).toString('utf8')||'{}');}catch{throw fail(400,'Invalid JSON');}if(!data||typeof data!=='object'||Array.isArray(data))throw fail(400,'Expected a JSON object');return data;}
   const json=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(data));};
   function auth(req,url){const r=rooms.get(url.searchParams.get('room'));if(!r)throw fail(404,'Room not found. Create a new match.');const token=req.headers.authorization?.replace(/^Bearer /,'')||url.searchParams.get('token');const team=r.members.findIndex(m=>m?.token===token);if(team<0)throw fail(403,'Invalid player session');return [r,team];}
   function broadcast(r){const payload=JSON.stringify({game:r.game,connected:r.members.map(m=>!!m?.stream),room:r.code,rematch:r.votes,status:r.members.every(m=>m?.stream)?'connected':r.members[1]?'paused':'waiting'});for(const m of r.members)if(m?.stream&&!m.stream.writableNeedDrain)m.stream.write(`data: ${payload}\n\n`);}
@@ -16,6 +16,7 @@ export function createServer(){
     try{
       if(req.method==='POST'&&req.headers.origin){const o=new URL(req.headers.origin);if(o.host!==req.headers.host)throw fail(403,'Use this game’s own page');}
       if(req.method==='POST'&&url.pathname==='/api/create'){
+        await body(req);
         if(rooms.size>=128)throw fail(503,'All rooms are busy. Try again shortly.');
         let code;do{code=randomBytes(4).toString('hex').slice(0,6).toUpperCase();}while(rooms.has(code));
         const token=randomBytes(24).toString('hex');rooms.set(code,{code,game:createGame(),members:[{token,input:{},seen:Date.now(),stream:null},null],votes:[false,false],touched:Date.now()});return json(res,200,{room:code,token,team:0});
@@ -31,6 +32,7 @@ export function createServer(){
       }
       if(req.method==='POST'&&['/api/input','/api/action','/api/rematch','/api/leave'].includes(url.pathname)){
         const [r,t]=auth(req,url),data=await body(req),m=r.members[t];r.touched=Date.now();m.seen=Date.now();
+        if(url.pathname==='/api/action'&&(!['pass','through','shoot','switch','tackle'].includes(data.kind)||['x','y','power'].some(key=>data[key]!==undefined&&!Number.isFinite(data[key]))))throw fail(400,'Invalid action or direction');
         if(url.pathname==='/api/input')m.input={x:Number.isFinite(data.x)?Math.max(-1,Math.min(1,data.x)):0,y:Number.isFinite(data.y)?Math.max(-1,Math.min(1,data.y)):0,sprint:!!data.sprint};
         if(url.pathname==='/api/action'&&r.members.every(m=>m?.stream)){if(Date.now()-(m.lastAction||0)>80){action(r.game,t,data.kind,data.x,data.y,data.power);m.lastAction=Date.now();}}
         if(url.pathname==='/api/rematch'&&r.game.phase==='ended'){r.votes[t]=true;if(r.votes.every(Boolean)){r.game=createGame();r.votes=[false,false];}}

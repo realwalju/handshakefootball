@@ -5,6 +5,21 @@ const playable=()=>{const g=createGame();g.phase='playing';return g;};
 test('two complete teams, opposing formations, and a human-controlled kickoff',()=>{const g=createGame();assert.equal(g.players.length,22);assert.equal(g.players.filter(p=>p.n===1).length,2);assert.equal(g.ball.owner,g.selected[0]);assert.ok(g.players[11].x>g.players[0].x);});
 test('passing releases the ball and switches control to a teammate',()=>{const g=playable(),id=g.ball.owner;assert.equal(action(g,0,'pass',1,0),true);assert.equal(g.ball.owner,null);assert.notEqual(g.selected[0],id);assert.equal(g.players[g.selected[0]].team,0);assert.ok(Math.hypot(g.ball.vx,g.ball.vy)>300);});
 test('the opponent cannot pass a ball it does not possess',()=>{const g=playable();assert.equal(action(g,1,'pass',-1,0),false);assert.equal(g.ball.owner,9);});
+test('each human can switch defenders and send a through ball with receiver control',()=>{
+ for(const team of [0,1]){
+  const g=playable(),old=g.selected[team];g.ball.owner=null;
+  assert.equal(action(g,team,'switch'),true);assert.notEqual(g.selected[team],old);assert.equal(g.players[g.selected[team]].team,team);assert.notEqual(g.players[g.selected[team]].n,1);
+  const carrier=g.players[team*11+9];g.selected[team]=carrier.id;g.ball.owner=carrier.id;
+  assert.equal(action(g,team,'through',team?-1:1,0),true);assert.equal(g.ball.owner,null);assert.notEqual(g.selected[team],carrier.id);assert.equal(g.players[g.selected[team]].team,team);
+ }
+});
+test('invalid action directions cannot corrupt the shared simulation',()=>{
+ for(const bad of [null,'left',{},NaN,Infinity]){
+  const g=playable(),before=JSON.stringify(g);
+  assert.equal(action(g,0,'shoot',bad,0),false);assert.equal(JSON.stringify(g),before);
+  assert.equal(action(g,0,'pass',1,bad),false);assert.equal(JSON.stringify(g),before);
+ }
+});
 test('a swept shot can be saved rather than tunnelling through a goalkeeper',()=>{const g=playable();for(const p of g.players){p.x=400;p.y=80;}const keeper=g.players[11];keeper.x=W-30;keeper.y=340;g.ball={x:W-35,y:340,vx:900,vy:0,owner:null,lock:0,last:0};step(g,[{},{}],.05);assert.equal(g.ball.owner,keeper.id);assert.deepEqual(g.score,[0,0]);});
 test('crossing the goal line scores once and restarts with the conceding team',()=>{const g=playable();g.ball={x:W-1,y:340,vx:900,vy:0,owner:null,lock:1,last:0};step(g);assert.deepEqual(g.score,[1,0]);assert.equal(g.phase,'goal');assert.equal(g.players[g.ball.owner].team,1);for(let i=0;i<30;i++)step(g);assert.deepEqual(g.score,[1,0]);});
 test('touchline exit awards possession to the other team',()=>{const g=playable();g.ball={x:400,y:1,vx:0,vy:-400,owner:null,lock:1,last:0};step(g);assert.equal(g.phase,'restart');assert.equal(g.message,'THROW IN');assert.equal(g.players[g.ball.owner].team,1);});

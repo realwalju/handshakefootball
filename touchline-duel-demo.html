@@ -50,6 +50,7 @@ function switchPlayer(g,team) {
 }
 function action(g,team,kind,aimX=0,aimY=0,power=.65) {
   if(g.phase!=='playing'||![0,1].includes(team))return false;
+  if(!Number.isFinite(aimX)||!Number.isFinite(aimY)||!Number.isFinite(power))return false;
   const p=g.players[g.selected[team]], b=g.ball;
   if(kind==='switch'){switchPlayer(g,team);return true;}
   if(p.cool>0)return false;

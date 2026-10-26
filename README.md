@@ -47,11 +47,19 @@ This is a prototype, not a finished simulation. There is no offside, foul system
 
 ## Publish for the challenge
 
+[Deploy to Render](https://render.com/deploy?repo=https://github.com/realwalju/handshakefootball)
+
+This repository includes `render.yaml` for a single **free Node web service**. After pushing to GitHub, open the deploy link, sign in to Render, and review the Blueprint. Keep the Free plan selected. Render runs `npm test` before starting the server, uses `/health` for its health check, and provides an HTTPS `onrender.com` URL. Do not create a Static Site. See [Render's Blueprint reference](https://render.com/docs/blueprint-spec).
+
+Render's free service sleeps after 15 minutes without incoming traffic and can take about a minute to wake up. Rooms are in memory, so restarts or sleeping discard them. Open the published page ahead of a playtest and create a fresh room. See [free-service limits](https://render.com/docs/free).
+
 Deploy this folder to a host that runs a **persistent Node process** and supports streaming HTTP responses. Set its start command to `npm start`; the app listens on `0.0.0.0` and uses the supplied `PORT` environment variable. Use one server instance. Static-only hosting cannot run the multiplayer server.
 
 Use HTTPS and ensure the reverse proxy does not buffer `/api/events`. The server sends event-stream snapshots; buffering them will cause lag or freeze updates. Rooms live in memory and disappear when the server restarts. This prototype caps active rooms at 128, expires abandoned rooms after 20 minutes, checks room tokens for player actions, and limits request sizes; it is not load-tested or hardened for large public traffic. A public release should add request-rate limiting, monitoring, and a cap on connection creation appropriate to its host.
 
 Before submission, test two physical devices on different networks: room creation, joining, passing, switching, shooting, match completion, disconnect/reconnect, phone controls, and rematch. Verify the published link without a logged-in session.
+
+Use [PLAYTEST.md](PLAYTEST.md) for a short two-player test and the current verification results.
 
 ## Verification
 
