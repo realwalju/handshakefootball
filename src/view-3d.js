@@ -18,6 +18,7 @@ function mesh(geometry,material,parent,x=0,y=0,z=0){
 // This little articulated model can later be replaced with a rigged GLTF asset.
 export function createPlayerModel(player){
   const root=new THREE.Group();root.name=`player-${player.id}`;
+  root.scale.setScalar(.68);
   const body=new THREE.Group();root.add(body);
   const skin=solid(SKIN[player.id%SKIN.length]),shirt=solid(player.n===1?0xe4c76f:KIT[player.team]);
   const torso=mesh(shapes.body,shirt,body,0,1.55);torso.castShadow=true;
@@ -49,15 +50,20 @@ export function updatePlayerModel(model,player,now,dt=1/60,interpolate=false,pre
   else{model.position.x+=(x-model.position.x)*blend;model.position.z+=(z-model.position.z)*blend;}
   const direction=Math.atan2(player.fx,player.fy),delta=direction-model.rotation.y;
   const turn=Math.atan2(Math.sin(delta),Math.cos(delta));model.rotation.y+=turn*(1-Math.exp(-14*dt));
-  const speed=Math.hypot(player.vx,player.vy),targetStride=Math.min(speed/145,1.35);
+  const speed=Math.hypot(player.vx,player.vy),targetStride=Math.min(speed/65,1.35);
   model.userData.moveBlend+=(targetStride-model.userData.moveBlend)*(1-Math.exp(-10*dt));
-  model.userData.gaitPhase+=speed/(72+player.id%5*3)*Math.PI*2*dt;
+  model.userData.gaitPhase+=speed/(30+player.id%5)*Math.PI*2*dt;
   const phase=model.userData.gaitPhase,stride=model.userData.moveBlend,body=model.userData.body;
   body.position.y=Math.abs(Math.sin(phase))*.055*stride;body.position.x=Math.sin(phase)*.025*stride;
   body.rotation.x=.12*stride;body.rotation.y=THREE.MathUtils.clamp(turn,-.5,.5)*.35*stride;
   for(const {arm,leg,side,knee,elbow} of model.userData.limbs){
     const swing=Math.sin(phase)*side;leg.rotation.x=swing*.55*stride;arm.rotation.x=-swing*.42*stride;
     knee.rotation.x=Math.max(0,-swing)*.75*stride;elbow.rotation.x=-.5*stride;
+    if(player.motionTime>0&&side===1){
+      const duration=player.motion==='kick'?.32:player.motion==='tackle'?.4:.38;
+      const motion=Math.sin(Math.min(1,player.motionTime/duration)*Math.PI);
+      leg.rotation.x-=motion*(player.motion==='kick'?.9:.48);knee.rotation.x+=motion*.25;
+    }
   }
 }
 
@@ -89,11 +95,11 @@ function beam(parent,from,to,radius=.1){
 function goal(side){
   const group=new THREE.Group();group.name=side<0?'goal-left':'goal-right';
   const x=side*HALF_X,back=x+side*2.8;
-  for(const z of [-7.5,7.5]){beam(group,[x,0,z],[x,3,z]);beam(group,[x,3,z],[back,.1,z],.065);beam(group,[x,.1,z],[back,.1,z],.065);}
-  beam(group,[x,3,-7.5],[x,3,7.5]);
+  for(const z of [-3.66,3.66]){beam(group,[x,0,z],[x,2.44,z]);beam(group,[x,2.44,z],[back,.1,z],.065);beam(group,[x,.1,z],[back,.1,z],.065);}
+  beam(group,[x,2.44,-3.66],[x,2.44,3.66]);
   const points=[];const segment=(a,b)=>points.push(...a,...b);
-  for(let z=-7.5;z<=7.5;z+=.5)segment([back,0,z],[back,3,z]);
-  for(let y=0;y<=3;y+=.5){segment([back,y,-7.5],[back,y,7.5]);for(const z of [-7.5,7.5])segment([x,y,z],[back,y,z]);}
+  for(let z=-3.66;z<=3.66;z+=.4)segment([back,0,z],[back,2.44,z]);
+  for(let y=0;y<=2.44;y+=.4){segment([back,y,-3.66],[back,y,3.66]);for(const z of [-3.66,3.66])segment([x,y,z],[back,y,z]);}
   const netGeometry=new THREE.BufferGeometry();netGeometry.setAttribute('position',new THREE.Float32BufferAttribute(points,3));
   group.add(new THREE.LineSegments(netGeometry,new THREE.LineBasicMaterial({color:0xd5e5d6,transparent:true,opacity:.25})));
   return group;
@@ -117,6 +123,14 @@ export function fitWideCamera(camera,aspect){
     if(fits)return distance;distance*=1.06;
   }
   return distance;
+}
+
+// Include the controlled receiver as well as the ball, so a pass never causes
+// the camera to abandon the player the human needs to steer.
+export function followFrame(ball,active,aspect=1.5){
+  const focus=new THREE.Vector3(ball.x*.65+active.x*.35,0,ball.z*.65+active.z*.35);
+  const spread=Math.max(Math.abs(ball.x-active.x)/Math.max(.65,aspect),Math.abs(ball.z-active.z));
+  return {focus,distance:Math.max(38,spread*2+28)};
 }
 
 export function createWorld(){
@@ -143,13 +157,14 @@ export function createWorld(){
   const ball=mesh(ballGeometry,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.8,flatShading:true}),scene,0,.58);ball.castShadow=true;ball.name='match-ball';
   const ballShadow=mesh(new THREE.CircleGeometry(.64,16),new THREE.MeshBasicMaterial({color:0x071d22,transparent:true,opacity:.3,depthWrite:false}),scene,0,.06);ballShadow.rotation.x=-Math.PI/2;
   const selected=selection(0xd5f581),opponent=selection(0xd6e2e5);opponent.userData.pointer.visible=false;scene.add(selected,opponent);
+  const receiver=selection(0xffd986);receiver.userData.pointer.visible=false;scene.add(receiver);
   const energy=new THREE.Group();mesh(new THREE.BoxGeometry(2.2,.12,.1),dark,energy);
   const energyFill=mesh(new THREE.BoxGeometry(2.1,.09,.12),new THREE.MeshBasicMaterial({color:0xd5f581,toneMapped:false}),energy);scene.add(energy);
   const charge=new THREE.Group();mesh(new THREE.BoxGeometry(3,.18,.12),dark,charge);
   const chargeFill=mesh(new THREE.BoxGeometry(2.9,.13,.14),new THREE.MeshBasicMaterial({color:0xffbb70,toneMapped:false}),charge);scene.add(charge);
   const aim=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),5,0xd5f581,1,.55);scene.add(aim);
   const camera=new THREE.PerspectiveCamera(43,1.5,.1,1000);fitWideCamera(camera,1.5);
-  return {scene,camera,players,ball,ballShadow,selected,opponent,energy,energyFill,charge,chargeFill,aim};
+  return {scene,camera,players,ball,ballShadow,selected,opponent,receiver,energy,energyFill,charge,chargeFill,aim};
 }
 
 function addJerseyNumbers(players){
@@ -172,7 +187,7 @@ export function create3DView(canvas,onUnavailable=()=>{}){
   renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
   renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
   const world=createWorld();addJerseyNumbers(world.players);
-  let cameraMode='wide',lastTime=0,lastGame=null,snapshotAt=0;const focus=new THREE.Vector3(),direction=new THREE.Vector3();
+  let cameraMode='follow',lastTime=0,lastGame=null,snapshotAt=0,cameraReady=false,cameraDistance=38;const focus=new THREE.Vector3(),direction=new THREE.Vector3();
   const resize=()=>{
     const rect=canvas.parentElement.getBoundingClientRect(),width=Math.max(1,Math.round(rect.width)),height=Math.max(1,Math.round(rect.height));
     renderer.setSize(width,height,false);world.camera.aspect=width/height;world.camera.updateProjectionMatrix();
@@ -181,7 +196,7 @@ export function create3DView(canvas,onUnavailable=()=>{}){
   const observer=new ResizeObserver(resize);observer.observe(canvas.parentElement);resize();
   canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();onUnavailable();});
   return {
-    setCameraMode(value){cameraMode=value;resize();},
+    setCameraMode(value){cameraMode=value;cameraReady=false;resize();},
     render(game,{team=0,mode='lobby',input={},chargeStart=0,now=0}={}){
       const dt=Math.min(.1,Math.max(1/240,(now-lastTime)/1000));lastTime=now;
       if(game!==lastGame){lastGame=game;snapshotAt=now;}
@@ -191,7 +206,7 @@ export function create3DView(canvas,onUnavailable=()=>{}){
       world.selected.visible=mode!=='lobby';world.opponent.visible=mode==='online';
       world.selected.position.copy(active.position);world.opponent.position.copy(rival.position);
       world.selected.userData.pointer.rotation.y=now*.001;
-      world.energy.visible=mode!=='lobby';world.energy.position.copy(active.position);world.energy.position.y=3.05;
+      world.energy.visible=mode!=='lobby';world.energy.position.copy(active.position);world.energy.position.y=2.25;
       const stamina=game.players[game.selected[team]].stamina;world.energyFill.scale.x=Math.max(.01,stamina);world.energyFill.position.x=-(1-stamina)*1.05;
       world.charge.visible=!!chargeStart&&mode!=='lobby';world.charge.position.copy(active.position);world.charge.position.y=4.15;
       const power=Math.min(1,Math.max(0,(now-chargeStart)/900));world.chargeFill.scale.x=Math.max(.01,power);world.chargeFill.position.x=-(1-power)*1.45;
@@ -200,11 +215,15 @@ export function create3DView(canvas,onUnavailable=()=>{}){
       else{world.ball.position.x+=(bx-world.ball.position.x)*blend;world.ball.position.z+=(bz-world.ball.position.z)*blend;}
       world.ball.rotation.z-=game.ball.vx*SCALE*dt/.55;world.ball.rotation.x+=game.ball.vy*SCALE*dt/.55;
       world.ballShadow.position.set(world.ball.position.x,.06,world.ball.position.z);
+      world.receiver.visible=mode!=='lobby'&&!!game.pass;
+      if(game.pass){world.receiver.position.set((game.pass.x-W/2)*SCALE,.02,(game.pass.y-H/2)*SCALE);world.receiver.scale.setScalar(.7);}
       world.aim.visible=mode!=='lobby'&&game.ball.owner===game.selected[team];
       if(world.aim.visible){const p=game.players[game.selected[team]],moving=Math.hypot(input.x||0,input.y||0)>.1;direction.set(moving?input.x:p.fx,0,moving?input.y:p.fy).normalize();world.aim.setDirection(direction);world.aim.position.copy(active.position).addScaledVector(direction,1.5);world.aim.position.y=.12;}
       if(cameraMode==='follow'){
-        direction.set(THREE.MathUtils.clamp(bx,-24,24),0,THREE.MathUtils.clamp(bz,-16,16));focus.lerp(direction,1-Math.exp(-4*dt));
-        world.camera.position.set(focus.x,43,focus.z+43);world.camera.lookAt(focus);world.camera.updateMatrixWorld(true);
+        const frame=followFrame(world.ball.position,active.position,world.camera.aspect);
+        if(!cameraReady){focus.copy(frame.focus);cameraDistance=frame.distance;cameraReady=true;}
+        else{focus.lerp(frame.focus,1-Math.exp(-2.5*dt));cameraDistance+=(frame.distance-cameraDistance)*(1-Math.exp(-3*dt));}
+        world.camera.position.set(focus.x,cameraDistance*.75,focus.z+cameraDistance*.66);world.camera.lookAt(focus);world.camera.updateMatrixWorld(true);
       }
       renderer.render(world.scene,world.camera);
     },

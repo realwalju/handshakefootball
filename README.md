@@ -2,7 +2,7 @@
 
 [Play at soccer.walju.net](https://soccer.walju.net) · [Vercel fallback URL](https://touchline-duel.vercel.app)
 
-[Try the basic 3D version](https://soccer.walju.net/?view=3d). Use **Try 3D** above the pitch to switch views during warm-up or an online match. The **Camera** button switches between a full-pitch view and a closer camera following the ball. **2D** switches back without restarting the match.
+[Try the basic 3D version](https://soccer.walju.net/?view=3d). On browsers with WebGL2, 3D is the default and opens with the closer broadcast camera, intended receiving-space marker, and full-pitch radar. The **Camera** button switches to the full-pitch view, while **2D** switches views without restarting the match.
 
 A playable soccer prototype: two human rivals, each controlling a full team of eleven. Passes switch control to their intended receiver; teammates build passing angles, make runs, and defend from a flexible 4–4–2 base.
 
@@ -109,7 +109,7 @@ npm ci
 npm test
 ```
 
-The 31-test automated suite covers team composition, possession restrictions, pass/control transfer, fast-shot interception, goals, restarts, keeper distribution, full-match numerical stability, two-player room authentication/synchronization/disconnect/rematch, cross-instance room updates, the polling client, 3D models and animation, camera framing, a 2D fallback without WebGL, acceleration/braking, independent support, defensive cover, receiving assistance/manual override, and deterministic movement. A separate real-database integration check is available after the Neon integration is connected:
+The 33-test automated suite covers team composition, possession restrictions, readable pass speed, first-touch buffering, loose-ball tackles and recovery, fast-shot interception, goals, restarts, keeper distribution, full-match numerical stability, two-player room authentication/synchronization/disconnect/rematch, cross-instance room updates, the polling client, articulated 3D models and animation, broadcast and full-pitch camera framing, a 2D fallback without WebGL, acceleration/braking, independent support, defensive cover, receiving assistance/manual override, and deterministic movement. See [the eFootball pacing study](docs/gameplay-analysis.md) for the measured problems, reference principles, current calibration, and known limits. A separate real-database integration check is available after the Neon integration is connected:
 
 ```sh
 npx vercel env pull .env.local

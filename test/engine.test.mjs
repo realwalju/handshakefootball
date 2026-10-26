@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createGame,step,action,W,H} from '../public/engine.js';
 const playable=()=>{const g=createGame();g.phase='playing';return g;};
 test('two complete teams, opposing formations, and a human-controlled kickoff',()=>{const g=createGame();assert.equal(g.players.length,22);assert.equal(g.players.filter(p=>p.n===1).length,2);assert.equal(g.ball.owner,g.selected[0]);assert.ok(g.players[11].x>g.players[0].x);});
-test('passing releases the ball and switches control to a teammate',()=>{const g=playable(),id=g.ball.owner;assert.equal(action(g,0,'pass',1,0),true);assert.equal(g.ball.owner,null);assert.notEqual(g.selected[0],id);assert.equal(g.players[g.selected[0]].team,0);assert.ok(Math.hypot(g.ball.vx,g.ball.vy)>300);});
+test('passing releases a readable ball and switches control to a teammate',()=>{const g=playable(),id=g.ball.owner;assert.equal(action(g,0,'pass',1,0),true);assert.equal(g.ball.owner,null);assert.notEqual(g.selected[0],id);assert.equal(g.players[g.selected[0]].team,0);const speed=Math.hypot(g.ball.vx,g.ball.vy);assert.ok(speed>=155&&speed<=245);});
 test('the opponent cannot pass a ball it does not possess',()=>{const g=playable();assert.equal(action(g,1,'pass',-1,0),false);assert.equal(g.ball.owner,9);});
 test('each human can switch defenders and send a through ball with receiver control',()=>{
  for(const team of [0,1]){

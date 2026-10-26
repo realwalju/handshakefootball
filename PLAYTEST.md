@@ -33,7 +33,7 @@
 
 ## Basic 3D comparison
 
-Open https://soccer.walju.net/?view=3d or select **Try 3D** above the pitch. Start warm-up, then compare **Camera: wide** with **Camera: follow ball**. Check the animated players, ball visibility, selection marker, stamina, and shot charge. Pass with J, switch with Q, and try a charged shot with K. Switch back to **2D** during play; score, clock, and session should continue. For online play, let one rival use 3D and the other use 2D, then compare their score and selected players. Test phone performance separately.
+Open https://soccer.walju.net/?view=3d or select **3D** above the pitch. Start warm-up, then compare **Camera: broadcast** with **Camera: full pitch**. Check the articulated players, ball visibility, selection and receiving-space markers, radar, stamina, first-touch message, tackle pose, and shot charge. Pass with J, switch with Q, and try a charged shot with K. Switch back to **2D** during play; score, clock, and session should continue. For online play, let one rival use 3D and the other use 2D, then compare their score and selected players. Test phone performance separately.
 
 ## Movement feel
 

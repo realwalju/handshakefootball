@@ -6,8 +6,8 @@ const run=(g,frames,input=[{},{}])=>{for(let i=0;i<frames;i++)step(g,input);};
 
 test('human movement accelerates, brakes and reverses with momentum',()=>{
   const g=playing(),p=g.players[g.selected[0]];step(g,[{x:1},{}]);
-  assert.ok(p.vx>0&&p.vx<80);run(g,15,[{x:1},{}]);const speed=p.vx;
-  assert.ok(speed>120);step(g,[{x:-1},{}]);assert.ok(p.vx>0&&p.vx<speed);
+  assert.ok(p.vx>0&&p.vx<10);run(g,15,[{x:1},{}]);const speed=p.vx;
+  assert.ok(speed>=45&&speed<=58);step(g,[{x:-1},{}]);assert.ok(p.vx>0&&p.vx<speed);
   const slowing=p.vx;step(g,[{},{}]);assert.ok(p.vx>=0&&p.vx<slowing);
   run(g,20);assert.ok(Math.hypot(p.vx,p.vy)<1);
 });
@@ -40,16 +40,27 @@ test('a through-ball receiver runs onto the pass without input while the passer 
 });
 test('manual steering overrides the receiving run immediately',()=>{
   const g=throughFixture();action(g,0,'through',1,0);run(g,10,[{x:-1},{}]);
-  assert.ok(g.players[10].x<640);assert.ok(g.players[10].vx<0);
+  assert.ok(g.players[10].x<650);assert.ok(g.players[10].vx<0);
 });
-test('an automatic defensive ball win transfers control to that human team',()=>{
-  const g=playing();Object.assign(g.players[21],{x:525,y:340,cool:0});
-  step(g);assert.equal(g.ball.owner,21);assert.equal(g.selected[1],21);
+test('automatic pressure must stay goal-side before committing a challenge',()=>{
+  const g=playing();for(const p of g.players.filter(p=>p.team===1))Object.assign(p,{x:900,y:80});
+  const defender=g.players[21];Object.assign(defender,{x:540,y:340,fx:-1,fy:0,cool:0});
+  step(g);assert.equal(g.ball.owner,9);
+  run(g,18);assert.notEqual(g.ball.owner,21);
 });
-test('a defender can make a quick pass after winning the ball while repeat tackles recover',()=>{
-  const g=playing(),p=g.players[20];Object.assign(p,{x:525,y:340,cool:0});
-  assert.equal(action(g,1,'tackle'),true);assert.equal(g.ball.owner,20);run(g,7);
-  assert.equal(action(g,1,'tackle'),false);assert.equal(action(g,1,'pass',-1,0),true);
+test('a standing tackle knocks an exposed ball loose and has a recovery window',()=>{
+  const g=playing(),p=g.players[20];Object.assign(p,{x:530,y:340,fx:-1,fy:0,cool:0});
+  assert.equal(action(g,1,'tackle'),true);assert.equal(g.ball.owner,null);assert.ok(g.ball.vx<0);
+  run(g,7);assert.equal(action(g,1,'tackle'),false);
+});
+test('a first touch settles an incoming pass and queues the next action',()=>{
+  const g=playing(),p=g.players[5];g.selected[0]=p.id;p.cool=0;
+  for(const q of g.players)if(q.id!==p.id){q.x=q.team?990:90;q.y=80;}
+  g.ball={x:p.x-13,y:p.y,vx:180,vy:0,owner:null,lock:0,last:1};
+  step(g,[{},{}],.05);assert.equal(g.ball.owner,p.id);assert.ok(p.controlTime>0);
+  assert.equal(action(g,0,'pass',1,0),true);assert.equal(g.ball.owner,p.id);assert.equal(p.buffer.kind,'pass');
+  for(let n=0;n<20&&g.ball.owner===p.id;n++)step(g);
+  assert.equal(g.ball.owner,null);assert.equal(p.buffer,null);
 });
 test('tactical decisions remain deterministic for the shared server simulation',()=>{
   const a=createGame(),b=createGame();a.bot=b.bot=[true,true];

@@ -1,4 +1,6 @@
 export const W = 1050, H = 680, DURATION = 180;
+// Ten simulation units equal one metre on the 105 x 68 metre pitch.
+export const PACE = Object.freeze({jog:58,sprint:88,dribble:50,dribbleSprint:72,passMin:155,passMax:245,through:225,shotMin:220,shotMax:310});
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dist = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
 const unit = (x,y) => {const d=Math.hypot(x,y)||1;return [x/d,y/d];};
@@ -10,7 +12,7 @@ export function createGame() {
   resetPositions(g,0);return g;
 }
 function resetPositions(g,team) {
-  for(const p of g.players){p.x=p.homeX;p.y=p.homeY;p.vx=p.vy=0;p.cool=0;p.tackleCool=0;p.planTime=0;p.runTime=0;p.keeperHold=0;p.decisionTime=0;}
+  for(const p of g.players){p.x=p.homeX;p.y=p.homeY;p.vx=p.vy=0;p.fx=p.team?-1:1;p.fy=0;p.cool=0;p.tackleCool=0;p.challengeTime=0;p.controlTime=0;p.buffer=null;p.motionTime=0;p.planTime=0;p.runTime=0;p.keeperHold=0;p.decisionTime=0;}
   const k=g.players[team*11+9];k.x=team?540:510;k.y=340;
   const other=g.players[team*11+10];other.x=team?600:450;other.y=400;
   for(const p of g.players) if(p.team!==team) p.x=p.team?Math.max(p.x,570):Math.min(p.x,480);
@@ -34,11 +36,14 @@ export function action(g,team,kind,aimX=0,aimY=0,power=.65) {
   if(kind==='switch'){switchPlayer(g,team);return true;}
   if(p.cool>0)return false;
   if(kind==='tackle') {
-    if(p.tackleCool>0)return false;p.tackleCool=.6;p.cool=.12;const owner=g.players[b.owner];
-    if(owner&&owner.team!==team&&b.lock<=0&&dist(p,owner)<32){b.owner=p.id;b.lock=.22;b.last=team;g.pass=null;g.message='BALL WON';}
+    if(p.tackleCool>0)return false;
+    challenge(g,p);
     return true;
   }
   if(b.owner!==p.id)return false;
+  if(!['pass','through','shoot'].includes(kind))return false;
+  // A tap during a first touch is retained and released when the feet are set.
+  if(p.controlTime>0){p.buffer={kind,aimX,aimY,power};return true;}
   let dx=aimX,dy=aimY;if(Math.hypot(dx,dy)<.1){dx=p.fx;dy=p.fy;}
   [dx,dy]=unit(dx,dy);
   let speed=0;
@@ -48,21 +53,22 @@ export function action(g,team,kind,aimX=0,aimY=0,power=.65) {
       return {q,d,dot,rank:dot*420-d*.35+passSpace(g,p,q)*1.4};
     }).filter(q=>q.d>25&&q.d<500).sort((a,b)=>b.rank-a.rank);
     const target=(candidates.find(c=>c.dot>.15)||candidates[0])?.q;if(!target)return false;
-    const lead=kind==='through'?100:Math.min(35,dist(p,target)/9);
-    let tx=target.x+target.vx*.22+(kind==='through'?(team?-lead:lead):0),ty=target.y+target.vy*.22;
+    const lead=kind==='through'?65:0,flight=clamp(dist(p,target)/190,.2,1.4);
+    let tx=target.x+target.vx*flight*.65+(kind==='through'?(team?-lead:lead):0),ty=target.y+target.vy*flight*.65;
     [dx,dy]=unit(clamp(tx,15,W-15)-p.x,clamp(ty,15,H-15)-p.y);
-    speed=kind==='through'?520:clamp(dist(p,target)*1.1+220,350,620);
-    g.pass={team,from:p.id,to:target.id,x:clamp(tx,15,W-15),y:clamp(ty,15,H-15),through:kind==='through',time:clamp(dist(p,target)/speed*1.5+.8,1,2.6)};
-    p.runTime=2.6;p.runX=clamp(p.x+(team?-125:125),40,W-40);p.runY=clamp(p.y+(p.y<H/2?-38:38),45,H-45);p.planTime=0;
+    speed=kind==='through'?Math.max(PACE.through,clamp(dist(p,{x:tx,y:ty})*.55+120,PACE.through,280)):clamp(dist(p,target)*.5+100,PACE.passMin,PACE.passMax);
+    g.pass={team,from:p.id,to:target.id,x:clamp(tx,15,W-15),y:clamp(ty,15,H-15),through:kind==='through',time:clamp(dist(p,target)/speed*2+1.2,2,5)};
+    p.runTime=3.6;p.runX=clamp(p.x+(team?-100:100),40,W-40);p.runY=clamp(p.y+(p.y<H/2?-38:38),45,H-45);p.planTime=0;
     g.selected[team]=target.id;g.message=kind==='through'?'THROUGH BALL':'PASS';
   }else if(kind==='shoot'){
     g.pass=null;
     power=clamp(Number(power)||.65,.2,1);
     // Default facing shoots toward goal, directional input allows manual aiming.
     if(Math.hypot(aimX,aimY)<.1){[dx,dy]=unit((team?0:W)-p.x,340-p.y);}
-    speed=610+power*300;g.message='SHOT';
+    speed=PACE.shotMin+power*(PACE.shotMax-PACE.shotMin);g.message='SHOT';
   }else return false;
-  b.owner=null;b.x=p.x+dx*18;b.y=p.y+dy*18;b.vx=dx*speed;b.vy=dy*speed;b.lock=kind==='shoot'?.05:.1;b.last=team;p.cool=.2;
+  b.owner=null;b.x=p.x+dx*10;b.y=p.y+dy*10;b.vx=dx*speed;b.vy=dy*speed;b.lock=.06;b.last=team;b.control=0;p.cool=.28;
+  p.fx=dx;p.fy=dy;p.motion='kick';p.motionTime=.32;
   return true;
 }
 function turn(p,x,y,dt,rate=7){
@@ -72,12 +78,28 @@ function turn(p,x,y,dt,rate=7){
 }
 function locomotion(p,vx,vy,dt,human=false){
   const dx=vx-p.vx,dy=vy-p.vy,d=Math.hypot(dx,dy),braking=vx*p.vx+vy*p.vy<0||Math.hypot(vx,vy)<Math.hypot(p.vx,p.vy);
-  const acceleration=human?(braking?1050:800):(braking?650:440),amount=Math.min(1,acceleration*dt/(d||1));
+  const acceleration=human?(braking?230:155):(braking?190:120),amount=Math.min(1,acceleration*dt/(d||1));
   p.vx+=dx*amount;p.vy+=dy*amount;
   if(Math.hypot(vx,vy)<.1&&Math.hypot(p.vx,p.vy)<2)p.vx=p.vy=0;
   const x=p.x+p.vx*dt,y=p.y+p.vy*dt;p.x=clamp(x,9,W-9);p.y=clamp(y,9,H-9);
   if(p.x!==x)p.vx=0;if(p.y!==y)p.vy=0;
-  if(Math.hypot(p.vx,p.vy)>5)turn(p,p.vx,p.vy,dt,human?10:6.5);
+  if(Math.hypot(p.vx,p.vy)>5)turn(p,p.vx,p.vy,dt,human?5:4);
+}
+function challenge(g,p){
+  const b=g.ball,owner=g.players[b.owner];p.tackleCool=.85;p.cool=.16;p.motion='tackle';p.motionTime=.4;p.challengeTime=0;
+  // Reach the exposed ball, rather than stealing it through the carrier's body.
+  if(!owner||owner.team===p.team||b.lock>0||dist(p,b)>19)return;
+  const [dx,dy]=unit(b.x-p.x,b.y-p.y);
+  if(dx*p.fx+dy*p.fy<-.15)return;
+  b.owner=null;b.vx=dx*70+p.vx*.3;b.vy=dy*70+p.vy*.3;b.lock=.07;b.last=p.team;b.control=0;
+  owner.cool=.35;owner.controlTime=0;owner.buffer=null;g.pass=null;g.message='BALL CHALLENGED';
+}
+function receive(g,p,x,y){
+  const b=g.ball,incoming=Math.hypot(b.vx-p.vx,b.vy-p.vy),alignment=p.fx*(-b.vx)+p.fy*(-b.vy);
+  p.controlTime=clamp(.12+incoming/1300+(alignment<0?.06:0),.14,.38);
+  p.motion='touch';p.motionTime=p.controlTime;p.vx*=.7;p.vy*=.7;p.challengeTime=0;
+  b.owner=p.id;b.x=x;b.y=y;b.last=p.team;b.lock=.07;b.control=p.controlTime;
+  g.pass=null;if(p.n!==1)g.selected[p.team]=p.id;
 }
 function laneDistance(p,a,b){
   const dx=b.x-a.x,dy=b.y-a.y,t=clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1),0,1);
@@ -145,24 +167,24 @@ function openPosition(g,p,candidates,carrier){
 function plan(g,p,context){
   const {sign,b,owner,possession,ballU,marks}=context,time=DURATION-g.clock;
   const lane=p.homeY<H/2?-1:1,phase=time*.65+p.id*2.17,pulse=(Math.sin(phase)+1)/2;
-  const point=(u,y)=>({x:p.team?W-u:u,y});let target,speed=126+(p.n*7%17),intent='shape';
+  const point=(u,y)=>({x:p.team?W-u:u,y});let target,speed=43+(p.n*7%12),intent='shape';
   if(p.n===1){
-    target={x:p.team?W-42:42,y:clamp(340+(b.y-340)*.48,272,408)};speed=160;
+    target={x:p.team?W-32:32,y:clamp(340+(b.y-340)*.3,312,368)};speed=70;
     const ownDistance=p.team?W-b.x:b.x;
     if(ownDistance<140&&Math.abs(b.y-340)<145&&(!owner||possession!==p.team))target={x:clamp(b.x+b.vx*.12,p.team?W-105:20,p.team?W-20:105),y:clamp(b.y+b.vy*.12,210,470)};
     intent='keeper';
-  }else if(g.pass?.to===p.id&&b.owner===null){target=receivingPoint(g,p);speed=174;intent='receive';}
+  }else if(g.pass?.to===p.id&&b.owner===null){target=receivingPoint(g,p);speed=78;intent='receive';}
   else if(owner?.id===p.id){
-    target=point(W-45,340+(p.homeY-340)*.2);speed=137;
+    target=point(W-45,340+(p.homeY-340)*.2);speed=PACE.dribble;
     const opponent=g.players.filter(q=>q.team!==p.team).sort((a,c)=>dist(p,a)-dist(p,c))[0];
     if(opponent&&dist(p,opponent)<100)target.y=clamp(p.y+(p.y>=opponent.y?85:-85),80,H-80);
     intent='carry';
   }else if(possession!==p.team&&p.id===context.presser){
-    target={x:clamp(b.x+(owner?owner.vx:b.vx)*.2,15,W-15),y:clamp(b.y+(owner?owner.vy:b.vy)*.2,15,H-15)};speed=162;intent='press';
+    target={x:clamp(b.x+(owner?owner.vx:b.vx)*.18-sign*(owner?15:0),15,W-15),y:clamp(b.y+(owner?owner.vy:b.vy)*.18,15,H-15)};speed=68;intent='press';
   }else if(possession!==p.team&&p.id===context.cover){
-    target={x:b.x-sign*68,y:clamp(b.y+lane*48,45,H-45)};speed=142;intent='cover';
+    target={x:b.x-sign*68,y:clamp(b.y+lane*48,45,H-45)};speed=54;intent='cover';
   }else if(possession===p.team){
-    if(p.runTime>0){target={x:p.runX,y:p.runY};speed=168;intent='pass-and-move';}
+    if(p.runTime>0){target={x:p.runX,y:p.runY};speed=73;intent='pass-and-move';}
     else{
       let u,y=p.homeY;
       if(p.n<=5){
@@ -179,7 +201,7 @@ function plan(g,p,context){
         u=clamp(ballU+(run>.45?135+run*65:15),430,W-48);y=340+lane*(75+55*run)+(b.y-340)*.19;intent=run>.45?'channel run':'drop for pass';
       }
       const base=point(u,y),options=[base,point(u-32,y+lane*32),point(u+35,y-lane*35)];
-      target=openPosition(g,p,options,owner);speed=intent==='channel run'||intent==='overlap'?163:132+(p.n*7%13);
+      target=openPosition(g,p,options,owner);speed=intent==='channel run'||intent==='overlap'?75:45+(p.n*7%12);
     }
   }else{
     const back=clamp(ballU-125,80,580),depth=p.n<=5?0:p.n<=9?125:255;
@@ -188,11 +210,11 @@ function plan(g,p,context){
     if(mark){const weight=context.progress(mark)<400?.76:.45;target.x+=(mark.x-sign*27-target.x)*weight;target.y+=(mark.y+(b.y-mark.y)*.08-target.y)*weight;intent='track runner';}
   }
   p.intent=intent;p.targetX=clamp(target.x,12,W-12);p.targetY=clamp(target.y,15,H-15);p.targetSpeed=speed;
-  p.planTime=.2+(p.id*13%29)/100;
+  p.planTime=.45+(p.id*13%37)/100;
 }
 function restart(g,team,x,y,message) {
   const p=nearest(g,team,x,y);p.x=clamp(x,25,W-25);p.y=clamp(y,25,H-25);
-  for(const q of g.players){q.vx=q.vy=0;q.planTime=0;}p.cool=0;g.pass=null;
+  for(const q of g.players){q.vx=q.vy=0;q.planTime=0;q.controlTime=0;q.challengeTime=0;q.buffer=null;q.motionTime=0;}p.cool=0;g.pass=null;
   g.ball={x:p.x,y:p.y,vx:0,vy:0,owner:p.id,lock:.5,last:team};g.selected[team]=p.id;
   g.phase='restart';g.pause=.8;g.message=message;
   for(const q of g.players)if(q.team!==team&&dist(p,q)<70)q.x=clamp(q.x+(q.team?-75:75),15,W-15);
@@ -213,6 +235,8 @@ export function step(g,inputs=[{},{}],dt=1/30) {
   // on a different cadence, while acceleration turns decisions into curved runs.
   for(const p of g.players){
     p.cool=Math.max(0,p.cool-dt);p.tackleCool=Math.max(0,(p.tackleCool||0)-dt);p.runTime=Math.max(0,(p.runTime||0)-dt);p.planTime=Math.max(0,(p.planTime||0)-dt);
+    p.motionTime=Math.max(0,(p.motionTime||0)-dt);p.controlTime=Math.max(0,(p.controlTime||0)-dt);
+    if(b.owner!==p.id){p.controlTime=0;p.buffer=null;}
     p.keeperHold=b.owner===p.id?(p.keeperHold||0)+dt:0;p.decisionTime=Math.max(0,(p.decisionTime||0)-dt);
     if(p.stamina<.04)p.exhausted=true;if(p.stamina>.35)p.exhausted=false;
     const inp=inputs[p.team]||{},human=p.id===g.selected[p.team]&&!g.bot[p.team]&&p.n!==1;
@@ -222,14 +246,14 @@ export function step(g,inputs=[{},{}],dt=1/30) {
     if(human&&!assist){
       const sprint=!!inp.sprint&&!p.exhausted&&Math.hypot(dx,dy)>.05;
       p.stamina=clamp(p.stamina+(sprint?-.22:.14)*dt,0,1);
-      const speed=(sprint?205:145)*(b.owner===p.id?.94:1);movements.push({p,vx:dx*speed,vy:dy*speed,human:true});continue;
+      const carrying=b.owner===p.id,speed=(carrying?(sprint?PACE.dribbleSprint:PACE.dribble):(sprint?PACE.sprint:PACE.jog))*(p.controlTime>0?.55:1)*(p.motion==='tackle'&&p.motionTime>0?.45:1);movements.push({p,vx:dx*speed,vy:dy*speed,human:true});continue;
     }
-    if(assist){p.intent='receive';const velocity=steeringVelocity(g,p,receivingPoint(g,p),174);movements.push({p,...velocity,human:true});continue;}
+    if(assist){p.intent='receive';const velocity=steeringVelocity(g,p,receivingPoint(g,p),78);movements.push({p,...velocity,human:true});continue;}
     const context=contexts[p.team];
     if(p.planTime<=0||p.n===1||p.id===owner?.id||(possession!==p.team&&p.id===context.presser)||g.pass?.to===p.id)plan(g,p,context);
-    const target={x:p.targetX,y:p.targetY},sprint=p.targetSpeed>150&&!p.exhausted&&dist(p,target)>45;
+    const target={x:p.targetX,y:p.targetY},sprint=p.targetSpeed>65&&!p.exhausted&&dist(p,target)>45;
     p.stamina=clamp(p.stamina+(sprint?-.12:.13)*dt,0,1);
-    const speed=p.exhausted?Math.min(140,p.targetSpeed):p.targetSpeed;
+    const speed=(p.exhausted?Math.min(52,p.targetSpeed):p.targetSpeed)*(p.controlTime>0?.55:1);
     movements.push({p,...steeringVelocity(g,p,target,speed)});
   }
   for(const movement of movements){const {p,vx,vy,human}=movement;locomotion(p,vx,vy,dt,human);if(!human&&Math.hypot(p.vx,p.vy)<8)turn(p,b.x-p.x,b.y-p.y,dt,4);}
@@ -238,16 +262,19 @@ export function step(g,inputs=[{},{}],dt=1/30) {
   if(carrier&&b.lock<=0){
     const challengers=g.players.filter(p=>p.team!==carrier.team&&p.cool===0&&p.tackleCool===0&&
       (p.n===1||p.id===contexts[p.team].presser)&&
-      (p.n===1||g.bot[p.team]||p.id!==g.selected[p.team])&&dist(p,carrier)<(p.n===1?21:18));
+      (p.n===1||g.bot[p.team]||p.id!==g.selected[p.team])&&dist(p,b)<(p.n===1?21:19));
     challengers.sort((a,c)=>dist(a,carrier)-dist(c,carrier));
-    if(challengers[0]){const p=challengers[0];b.owner=p.id;b.last=p.team;b.lock=.28;p.cool=.12;p.tackleCool=.65;g.pass=null;g.message='BALL WON';if(p.n!==1)g.selected[p.team]=p.id;}
+    const challenger=challengers[0];
+    for(const p of g.players){p.challengeTime=p===challenger?(p.challengeTime||0)+dt:0;}
+    if(challenger&&challenger.challengeTime>(challenger.n===1?.18:.38))challenge(g,challenger);
   }
   const current=g.players[b.owner];
+  if(current?.buffer&&current.controlTime<=0&&current.cool===0){const queued=current.buffer;current.buffer=null;const previous=g.selected[current.team];g.selected[current.team]=current.id;action(g,current.team,queued.kind,queued.aimX,queued.aimY,queued.power);if(b.owner===current.id)g.selected[current.team]=previous;}
   if(current&&current.cool===0){
     const sign=current.team?-1:1,previous=g.selected[current.team];
     if(current.n===1&&current.keeperHold>.72){g.selected[current.team]=current.id;if(!action(g,current.team,'pass',sign,0))g.selected[current.team]=previous;}
     else if(g.bot[current.team]&&current.n!==1&&current.decisionTime<=0){
-      current.decisionTime=.3+(current.n*7%23)/100;
+      current.decisionTime=.7+(current.n*7%31)/100;
       const distanceToGoal=Math.abs(current.x-(current.team?0:W)),pressure=g.players.some(q=>q.team!==current.team&&dist(current,q)<82);
       g.selected[current.team]=current.id;
       if(distanceToGoal<235&&Math.abs(current.y-H/2)<190){const goalY=340+Math.sin(current.id+DURATION-g.clock)*43;action(g,current.team,'shoot',(current.team?0:W)-current.x,goalY-current.y,.72);}
@@ -258,18 +285,20 @@ export function step(g,inputs=[{},{}],dt=1/30) {
   for(let i=0;i<g.players.length;i++)for(let j=i+1;j<g.players.length;j++){
     const a=g.players[i],c=g.players[j],d=dist(a,c);if(d<18){const angle=(i+j*7)*2.39996,[dx,dy]=d>.01?unit(c.x-a.x,c.y-a.y):[Math.cos(angle),Math.sin(angle)];const n=(18-d)*(1-Math.exp(-10*dt))*.5;a.x=clamp(a.x-dx*n,9,W-9);a.y=clamp(a.y-dy*n,9,H-9);c.x=clamp(c.x+dx*n,9,W-9);c.y=clamp(c.y+dy*n,9,H-9);}
   }
-  if(b.owner!==null){const p=g.players[b.owner],touch=11+Math.min(1,Math.hypot(p.vx,p.vy)/145)*3.5*(.5+.5*Math.sin((DURATION-g.clock)*11+p.id));b.x=p.x+p.fx*touch;b.y=p.y+p.fy*touch;b.vx=p.vx;b.vy=p.vy;}
+  if(b.owner!==null){const p=g.players[b.owner],speed=Math.hypot(p.vx,p.vy),touch=7+Math.min(1,speed/72)*5*(.5+.5*Math.sin((DURATION-g.clock)*9+p.id));
+    const blend=1-Math.exp(-(p.controlTime>0?10:24)*dt);b.x+=(p.x+p.fx*touch-b.x)*blend;b.y+=(p.y+p.fy*touch-b.y)*blend;b.vx=p.vx;b.vy=p.vy;b.control=p.controlTime;
+  }
   else{
     const oldX=b.x,oldY=b.y;b.x+=b.vx*dt;b.y+=b.vy*dt;const drag=Math.exp(-.48*dt);b.vx*=drag;b.vy*=drag;
     // Swept collision: fast shots cannot tunnel through a keeper or defender.
     if(b.lock<=0){const candidates=[];const vx=b.x-oldX,vy=b.y-oldY,len=vx*vx+vy*vy;
       for(const p of g.players){const t=len?clamp(((p.x-oldX)*vx+(p.y-oldY)*vy)/len,0,1):0;const d=Math.hypot(p.x-(oldX+t*vx),p.y-(oldY+t*vy));
         const radius=p.n===1?22:12;if(d<radius&&!(p.cool>0&&p.team===b.last))candidates.push({p,t});}
-      candidates.sort((a,c)=>a.t-c.t);if(candidates.length){const p=candidates[0].p;b.owner=p.id;b.x=p.x+p.fx*12;b.y=p.y+p.fy*12;b.last=p.team;b.lock=.1;g.pass=null;if(p.n!==1)g.selected[p.team]=p.id;}
+      candidates.sort((a,c)=>a.t-c.t);if(candidates.length){const {p,t}=candidates[0];receive(g,p,oldX+t*vx,oldY+t*vy);}
     }
   }
   if(b.x<0||b.x>W){
-    if(b.y>H/2-75&&b.y<H/2+75){const scorer=b.x>W?0:1;g.score[scorer]++;g.phase='goal';g.pause=2;g.message=`GOAL · ${scorer===0?'CORAL':'SKY'}`;resetPositions(g,1-scorer);}
+    if(b.y>H/2-36.6&&b.y<H/2+36.6){const scorer=b.x>W?0:1;g.score[scorer]++;g.phase='goal';g.pause=2;g.message=`GOAL · ${scorer===0?'CORAL':'SKY'}`;resetPositions(g,1-scorer);}
     else{const defending=b.x<0?0:1;if(b.last===defending)restart(g,1-defending,b.x<0?18:W-18,b.y<H/2?18:H-18,'CORNER');else restart(g,defending,b.x<0?95:W-95,340,'GOAL KICK');}
   }else if(b.y<0||b.y>H)restart(g,1-b.last,b.x,b.y<0?12:H-12,'THROW IN');
   if(g.aiTick>1.1)g.aiTick=0;
