@@ -5,6 +5,8 @@
 - Imported the complete project from `handshakefootball.bundle` and preserved it locally.
 - All 31 automated tests pass on Windows with Node.js 24.22.1. The movement update adds acceleration/braking, independent supporting runs, pressing/cover, pass-and-move, receiving assistance with manual override, quick passes after ball wins, deterministic decisions, and compatibility with existing rooms.
 - The real Postgres integration check also passed with the movement update before publication.
+- The movement update was published on October 26. Its hands-on visual review was blocked by Chrome URL verification in browser automation; the new movement feel still needs a human comparison. The automated tests check the behavior and synchronization, not whether it feels natural to a player.
+- The updated public match and mutual rematch passed: 1,359 requests, median 113 ms, p95 137 ms, and zero recovered upstream errors. Movement, passing, switching, room authentication, disconnect pause, and reconnect also passed on the published build.
 - The basic 3D view was visually checked in Chrome on the local preview: full-pitch and follow-ball cameras, animated players, defender switching, and a warm-up reaching full time. Switching back to 2D retained the same clock, score, and match state. Phone/GPU performance and two physical devices still need a hands-on comparison.
 - Fixed a Windows line-ending assumption in the client test harness.
 - Verified both teams can switch defenders and transfer control with through balls.
