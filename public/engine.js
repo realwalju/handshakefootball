@@ -1,18 +1,22 @@
 export const W = 1050, H = 680, DURATION = 180;
 // Ten simulation units equal one metre on the 105 x 68 metre pitch.
-export const PACE = Object.freeze({jog:58,sprint:88,dribble:50,dribbleSprint:72,passMin:155,passMax:245,through:225,shotMin:220,shotMax:310});
+export const PACE = Object.freeze({jog:58,sprint:88,dribble:50,dribbleSprint:72,passMin:155,passMax:245,throughMin:195,throughMax:285,shotMin:220,shotMax:310});
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dist = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
 const unit = (x,y) => {const d=Math.hypot(x,y)||1;return [x/d,y/d];};
 const formation = [[55,340],[230,95],[200,255],[200,425],[230,585],[430,130],[385,275],[385,405],[430,550],[650,260],[650,420]];
 const roles = ['GK','LB','CB','CB','RB','LM','CM','CM','RM','ST','ST'];
+const traits = [
+  [.8,.74,.9],[.96,.8,.84],[.84,.78,.91],[.86,.8,.92],[.95,.79,.84],
+  [1,.9,.86],[.9,.92,.92],[.92,.94,.94],[.99,.9,.87],[.97,.89,.94],[.95,.87,.92]
+];
 export function createGame() {
   const g={players:[],ball:{x:525,y:340,vx:0,vy:0,owner:null,lock:0,last:0},selected:[9,20],score:[0,0],clock:DURATION,phase:'kickoff',pause:1.2,message:'KICKOFF',kickTeam:0,bot:[false,false],aiTick:0,pass:null,press:[-1,-1],pressHold:[0,0]};
-  for(let t=0;t<2;t++) formation.forEach(([x,y],n)=>g.players.push({id:t*11+n,team:t,n:n+1,role:roles[n],x:t?W-x:x,y,homeX:t?W-x:x,homeY:y,vx:0,vy:0,fx:t?-1:1,fy:0,stamina:1,cool:0}));
+  for(let t=0;t<2;t++) formation.forEach(([x,y],n)=>g.players.push({id:t*11+n,team:t,n:n+1,role:roles[n],x:t?W-x:x,y,homeX:t?W-x:x,homeY:y,vx:0,vy:0,fx:t?-1:1,fy:0,stamina:1,cool:0,pace:traits[n][0],control:traits[n][1],awareness:traits[n][2]}));
   resetPositions(g,0);return g;
 }
 function resetPositions(g,team) {
-  for(const p of g.players){p.x=p.homeX;p.y=p.homeY;p.vx=p.vy=0;p.fx=p.team?-1:1;p.fy=0;p.cool=0;p.tackleCool=0;p.challengeTime=0;p.controlTime=0;p.buffer=null;p.motionTime=0;p.planTime=0;p.runTime=0;p.keeperHold=0;p.decisionTime=0;}
+  for(const p of g.players){p.x=p.homeX;p.y=p.homeY;p.vx=p.vy=0;p.fx=p.team?-1:1;p.fy=0;p.cool=0;p.tackleCool=0;p.challengeTime=0;p.controlTime=0;p.buffer=null;p.motionTime=0;p.planTime=0;p.runTime=0;p.keeperHold=0;p.possessionTime=0;p.decisionTime=0;}
   const k=g.players[team*11+9];k.x=team?540:510;k.y=340;
   const other=g.players[team*11+10];other.x=team?600:450;other.y=400;
   for(const p of g.players) if(p.team!==team) p.x=p.team?Math.max(p.x,570):Math.min(p.x,480);
@@ -48,15 +52,24 @@ export function action(g,team,kind,aimX=0,aimY=0,power=.65) {
   [dx,dy]=unit(dx,dy);
   let speed=0;
   if(kind==='pass'||kind==='through'){
+    const sign=team?-1:1;
     const candidates=g.players.filter(q=>q.team===team&&q.id!==p.id&&q.n!==1).map(q=>{
-      const d=dist(p,q), dot=((q.x-p.x)*dx+(q.y-p.y)*dy)/(d||1);
-      return {q,d,dot,rank:dot*420-d*.35+passSpace(g,p,q)*1.4};
+      const future={x:q.x+q.vx*.35,y:q.y+q.vy*.35},d=dist(p,future),dot=((future.x-p.x)*dx+(future.y-p.y)*dy)/(d||1);
+      const forwardSpeed=sign*q.vx,runBonus=/run|overlap/.test(q.intent||'')?70:0;
+      return {q,d,dot,rank:dot*420-d*.3+passSpace(g,p,future)*1.45+(kind==='through'?Math.max(0,forwardSpeed)*1.5+runBonus:0)};
     }).filter(q=>q.d>25&&q.d<500).sort((a,b)=>b.rank-a.rank);
     const target=(candidates.find(c=>c.dot>.15)||candidates[0])?.q;if(!target)return false;
-    const lead=kind==='through'?65:0,flight=clamp(dist(p,target)/190,.2,1.4);
-    let tx=target.x+target.vx*flight*.65+(kind==='through'?(team?-lead:lead):0),ty=target.y+target.vy*flight*.65;
+    const baseDistance=dist(p,target),nearbyDefenders=g.players.filter(q=>q.team!==team).sort((a,c)=>dist(a,target)-dist(c,target)),space=nearbyDefenders[0]?clamp(dist(nearbyDefenders[0],target),0,120):120;
+    const lead=kind==='through'?clamp(45+Math.max(0,sign*target.vx)*.7+space*.32,55,125):0;
+    const arrival=kind==='through'?clamp(.68+baseDistance/300,.85,1.75):clamp(.52+baseDistance/260,.72,1.65);
+    let tx=target.x+target.vx*arrival*.72+(kind==='through'?sign*lead:0),ty=target.y+target.vy*arrival*.72;
+    // Fast, blind changes of direction lose a little precision without turning
+    // ordinary passes into dice rolls.
+    const bodyAlignment=clamp(p.fx*dx+p.fy*dy,-1,1),error=(1-bodyAlignment)*Math.hypot(p.vx,p.vy)*.035;
+    ty+=Math.sin(p.id*2.17+(DURATION-g.clock)*.7)*error;
     [dx,dy]=unit(clamp(tx,15,W-15)-p.x,clamp(ty,15,H-15)-p.y);
-    speed=kind==='through'?Math.max(PACE.through,clamp(dist(p,{x:tx,y:ty})*.55+120,PACE.through,280)):clamp(dist(p,target)*.5+100,PACE.passMin,PACE.passMax);
+    const kickDistance=dist(p,{x:tx,y:ty}),required=kickDistance*.48/(1-Math.exp(-.48*arrival));
+    speed=kind==='through'?clamp(required,PACE.throughMin,PACE.throughMax):clamp(required,PACE.passMin,PACE.passMax);
     g.pass={team,from:p.id,to:target.id,x:clamp(tx,15,W-15),y:clamp(ty,15,H-15),through:kind==='through',time:clamp(dist(p,target)/speed*2+1.2,2,5)};
     p.runTime=3.6;p.runX=clamp(p.x+(team?-100:100),40,W-40);p.runY=clamp(p.y+(p.y<H/2?-38:38),45,H-45);p.planTime=0;
     g.selected[team]=target.id;g.message=kind==='through'?'THROUGH BALL':'PASS';
@@ -76,14 +89,15 @@ function turn(p,x,y,dt,rate=7){
   const current=Math.atan2(p.fy,p.fx),target=Math.atan2(y,x),difference=Math.atan2(Math.sin(target-current),Math.cos(target-current));
   const angle=current+clamp(difference,-rate*dt,rate*dt);p.fx=Math.cos(angle);p.fy=Math.sin(angle);
 }
-function locomotion(p,vx,vy,dt,human=false){
+function locomotion(p,vx,vy,dt,human=false,carrying=false){
   const dx=vx-p.vx,dy=vy-p.vy,d=Math.hypot(dx,dy),braking=vx*p.vx+vy*p.vy<0||Math.hypot(vx,vy)<Math.hypot(p.vx,p.vy);
-  const acceleration=human?(braking?230:155):(braking?190:120),amount=Math.min(1,acceleration*dt/(d||1));
+  const current=Math.hypot(p.vx,p.vy),ratio=clamp(current/(carrying?PACE.dribbleSprint:PACE.sprint),0,1);
+  const acceleration=braking?(human?230:190):(human?(carrying?205-ratio*95:185-ratio*70):145-ratio*45),amount=Math.min(1,acceleration*dt/(d||1));
   p.vx+=dx*amount;p.vy+=dy*amount;
   if(Math.hypot(vx,vy)<.1&&Math.hypot(p.vx,p.vy)<2)p.vx=p.vy=0;
   const x=p.x+p.vx*dt,y=p.y+p.vy*dt;p.x=clamp(x,9,W-9);p.y=clamp(y,9,H-9);
   if(p.x!==x)p.vx=0;if(p.y!==y)p.vy=0;
-  if(Math.hypot(p.vx,p.vy)>5)turn(p,p.vx,p.vy,dt,human?5:4);
+  if(Math.hypot(p.vx,p.vy)>5){const rate=human?(carrying?6.4-ratio*2.7:6.8-ratio*2.5):5-ratio*1.6;turn(p,p.vx,p.vy,dt,rate);}
 }
 function challenge(g,p){
   const b=g.ball,owner=g.players[b.owner];p.tackleCool=.85;p.cool=.16;p.motion='tackle';p.motionTime=.4;p.challengeTime=0;
@@ -96,8 +110,9 @@ function challenge(g,p){
 }
 function receive(g,p,x,y){
   const b=g.ball,incoming=Math.hypot(b.vx-p.vx,b.vy-p.vy),alignment=p.fx*(-b.vx)+p.fy*(-b.vy);
-  p.controlTime=clamp(.12+incoming/1300+(alignment<0?.06:0),.14,.38);
-  p.motion='touch';p.motionTime=p.controlTime;p.vx*=.7;p.vy*=.7;p.challengeTime=0;
+  const touchQuality=p.control??.86;
+  p.controlTime=clamp((.12+incoming/1300+(alignment<0?.06:0))*(1.18-touchQuality*.2),.12,.4);
+  p.motion='touch';p.motionTime=p.controlTime;p.vx*=.7;p.vy*=.7;p.challengeTime=0;p.touchPhase=0;
   b.owner=p.id;b.x=x;b.y=y;b.last=p.team;b.lock=.07;b.control=p.controlTime;
   g.pass=null;if(p.n!==1)g.selected[p.team]=p.id;
 }
@@ -142,7 +157,14 @@ function teamContext(g,team,inputs,dt){
   if(presser?.id!==g.press[team]){g.press[team]=presser?.id??-1;g.pressHold[team]=.65;}
   const coverPoint={x:b.x-sign*65,y:b.y};
   const cover=candidates.filter(p=>p.id!==presser?.id).sort((a,c)=>dist(a,coverPoint)-dist(c,coverPoint))[0];
-  const progress=p=>team?W-p.x:p.x,ballU=progress(b),marks=new Map(),used=new Set();
+  const progress=p=>team?W-p.x:p.x,ballU=progress(b),marks=new Map(),used=new Set(),support=new Map();let runner=-1;
+  if(owner?.team===team){
+    const available=players.filter(p=>p.id!==owner.id),ahead=available.filter(p=>progress(p)>progress(owner)+20);
+    const runnerPool=(ahead.length?ahead:available).filter(p=>p.n>=6).sort((a,c)=>(dist(a,owner)-progress(a)*.08-(a.awareness??.9)*35)-(dist(c,owner)-progress(c)*.08-(c.awareness??.9)*35));
+    runner=runnerPool[0]?.id??-1;
+    const options=available.filter(p=>p.id!==runner).sort((a,c)=>dist(a,owner)-dist(c,owner));
+    ['wall','forward','recycle'].forEach((role,index)=>{if(options[index])support.set(options[index].id,role);});
+  }
   if(possession!==team){
     const threats=g.players.filter(p=>p.team!==team&&p.n!==1&&p.id!==owner?.id&&progress(p)<670).sort((a,c)=>progress(a)-progress(c));
     for(const defender of players.filter(p=>p.n<=5||p.n===7||p.n===8)){
@@ -151,7 +173,7 @@ function teamContext(g,team,inputs,dt){
       if(threat){marks.set(defender.id,threat);used.add(threat.id);}
     }
   }
-  return {team,sign,b,owner,possession,ballU,progress,presser:presser?.id,cover:cover?.id,marks};
+  return {team,sign,b,owner,possession,ballU,progress,presser:presser?.id,cover:cover?.id,marks,support,runner};
 }
 function openPosition(g,p,candidates,carrier){
   let best=candidates[0],bestScore=-Infinity;
@@ -185,6 +207,19 @@ function plan(g,p,context){
     target={x:b.x-sign*68,y:clamp(b.y+lane*48,45,H-45)};speed=54;intent='cover';
   }else if(possession===p.team){
     if(p.runTime>0){target={x:p.runX,y:p.runY};speed=73;intent='pass-and-move';}
+    else if(owner&&p.id===context.runner&&ballU>220&&ballU<880){
+      const channel=p.homeY<H/2?-1:1;
+      target={x:owner.x+sign*clamp(145+Math.max(0,sign*owner.vx),145,205),y:clamp(owner.y+channel*(95+Math.abs(owner.y-H/2)*.15),55,H-55)};
+      speed=78;intent='line-breaking run';
+    }
+    else if(owner&&context.support.has(p.id)){
+      const role=context.support.get(p.id),side=p.homeY<owner.y?-1:1;
+      if(role==='wall')target={x:owner.x-sign*35,y:owner.y+side*72};
+      else if(role==='forward')target={x:owner.x+sign*82,y:owner.y-side*92};
+      else target={x:owner.x-sign*115,y:owner.y-side*48};
+      target=openPosition(g,p,[target,{x:target.x-sign*24,y:target.y+side*32},{x:target.x+sign*28,y:target.y-side*30}],owner);
+      speed=role==='forward'?64:52;intent=role==='wall'?'wall pass option':role==='forward'?'forward diagonal':'recycle option';
+    }
     else{
       let u,y=p.homeY;
       if(p.n<=5){
@@ -209,7 +244,10 @@ function plan(g,p,context){
     const mark=marks.get(p.id);
     if(mark){const weight=context.progress(mark)<400?.76:.45;target.x+=(mark.x-sign*27-target.x)*weight;target.y+=(mark.y+(b.y-mark.y)*.08-target.y)*weight;intent='track runner';}
   }
-  p.intent=intent;p.targetX=clamp(target.x,12,W-12);p.targetY=clamp(target.y,15,H-15);p.targetSpeed=speed;
+  p.intent=intent;
+  const responsiveness=intent==='receive'||intent==='press'||intent==='keeper'?.78:.48;
+  p.targetX=clamp(Number.isFinite(p.targetX)?p.targetX+(target.x-p.targetX)*responsiveness:target.x,12,W-12);
+  p.targetY=clamp(Number.isFinite(p.targetY)?p.targetY+(target.y-p.targetY)*responsiveness:target.y,15,H-15);p.targetSpeed=speed;
   p.planTime=.45+(p.id*13%37)/100;
 }
 function restart(g,team,x,y,message) {
@@ -237,7 +275,7 @@ export function step(g,inputs=[{},{}],dt=1/30) {
     p.cool=Math.max(0,p.cool-dt);p.tackleCool=Math.max(0,(p.tackleCool||0)-dt);p.runTime=Math.max(0,(p.runTime||0)-dt);p.planTime=Math.max(0,(p.planTime||0)-dt);
     p.motionTime=Math.max(0,(p.motionTime||0)-dt);p.controlTime=Math.max(0,(p.controlTime||0)-dt);
     if(b.owner!==p.id){p.controlTime=0;p.buffer=null;}
-    p.keeperHold=b.owner===p.id?(p.keeperHold||0)+dt:0;p.decisionTime=Math.max(0,(p.decisionTime||0)-dt);
+    p.keeperHold=b.owner===p.id?(p.keeperHold||0)+dt:0;p.possessionTime=b.owner===p.id?(p.possessionTime||0)+dt:0;p.decisionTime=Math.max(0,(p.decisionTime||0)-dt);
     if(p.stamina<.04)p.exhausted=true;if(p.stamina>.35)p.exhausted=false;
     const inp=inputs[p.team]||{},human=p.id===g.selected[p.team]&&!g.bot[p.team]&&p.n!==1;
     let dx=Number.isFinite(inp.x)?clamp(inp.x,-1,1):0,dy=Number.isFinite(inp.y)?clamp(inp.y,-1,1):0;
@@ -246,17 +284,17 @@ export function step(g,inputs=[{},{}],dt=1/30) {
     if(human&&!assist){
       const sprint=!!inp.sprint&&!p.exhausted&&Math.hypot(dx,dy)>.05;
       p.stamina=clamp(p.stamina+(sprint?-.22:.14)*dt,0,1);
-      const carrying=b.owner===p.id,speed=(carrying?(sprint?PACE.dribbleSprint:PACE.dribble):(sprint?PACE.sprint:PACE.jog))*(p.controlTime>0?.55:1)*(p.motion==='tackle'&&p.motionTime>0?.45:1);movements.push({p,vx:dx*speed,vy:dy*speed,human:true});continue;
+      const carrying=b.owner===p.id,pace=.88+(p.pace??.9)*.14,speed=(carrying?(sprint?PACE.dribbleSprint:PACE.dribble):(sprint?PACE.sprint:PACE.jog))*pace*(p.controlTime>0?.55:1)*(p.motion==='tackle'&&p.motionTime>0?.45:1);movements.push({p,vx:dx*speed,vy:dy*speed,human:true,carrying});continue;
     }
     if(assist){p.intent='receive';const velocity=steeringVelocity(g,p,receivingPoint(g,p),78);movements.push({p,...velocity,human:true});continue;}
     const context=contexts[p.team];
     if(p.planTime<=0||p.n===1||p.id===owner?.id||(possession!==p.team&&p.id===context.presser)||g.pass?.to===p.id)plan(g,p,context);
     const target={x:p.targetX,y:p.targetY},sprint=p.targetSpeed>65&&!p.exhausted&&dist(p,target)>45;
     p.stamina=clamp(p.stamina+(sprint?-.12:.13)*dt,0,1);
-    const speed=(p.exhausted?Math.min(52,p.targetSpeed):p.targetSpeed)*(p.controlTime>0?.55:1);
+    const pace=.88+(p.pace??.9)*.14,speed=(p.exhausted?Math.min(52,p.targetSpeed):p.targetSpeed)*pace*(p.controlTime>0?.55:1);
     movements.push({p,...steeringVelocity(g,p,target,speed)});
   }
-  for(const movement of movements){const {p,vx,vy,human}=movement;locomotion(p,vx,vy,dt,human);if(!human&&Math.hypot(p.vx,p.vy)<8)turn(p,b.x-p.x,b.y-p.y,dt,4);}
+  for(const movement of movements){const {p,vx,vy,human,carrying}=movement;locomotion(p,vx,vy,dt,human,carrying);if(!human&&Math.hypot(p.vx,p.vy)<8)turn(p,b.x-p.x,b.y-p.y,dt,4);}
   // One committed presser challenges; the rest screen lanes or track runners.
   const carrier=g.players[b.owner];
   if(carrier&&b.lock<=0){
@@ -275,18 +313,22 @@ export function step(g,inputs=[{},{}],dt=1/30) {
     if(current.n===1&&current.keeperHold>.72){g.selected[current.team]=current.id;if(!action(g,current.team,'pass',sign,0))g.selected[current.team]=previous;}
     else if(g.bot[current.team]&&current.n!==1&&current.decisionTime<=0){
       current.decisionTime=.7+(current.n*7%31)/100;
-      const distanceToGoal=Math.abs(current.x-(current.team?0:W)),pressure=g.players.some(q=>q.team!==current.team&&dist(current,q)<82);
+      const distanceToGoal=Math.abs(current.x-(current.team?0:W)),pressure=g.players.some(q=>q.team!==current.team&&dist(current,q)<82),attackSign=current.team?-1:1;
+      const choices=g.players.filter(q=>q.team===current.team&&q.id!==current.id&&q.n!==1).map(q=>({q,advance:attackSign*(q.x-current.x),space:passSpace(g,current,q),distance:dist(current,q)})).filter(option=>option.distance<430).sort((a,c)=>(c.advance+c.space*.8)-(a.advance+a.space*.8));
+      const option=choices[0],runOption=choices.find(choice=>/line-breaking|overlap/.test(choice.q.intent||'')&&choice.space>12&&choice.advance>30),windowOpen=option&&option.space>8&&option.advance>35;
       g.selected[current.team]=current.id;
-      if(distanceToGoal<235&&Math.abs(current.y-H/2)<190){const goalY=340+Math.sin(current.id+DURATION-g.clock)*43;action(g,current.team,'shoot',(current.team?0:W)-current.x,goalY-current.y,.72);}
-      else if(pressure)action(g,current.team,'pass',sign,clamp((340-current.y)/300,-.6,.6));
+      if(distanceToGoal<300&&Math.abs(current.y-H/2)<190&&current.possessionTime>.45){const goalY=340+Math.sin(current.id+DURATION-g.clock)*32;action(g,current.team,'shoot',(current.team?0:W)-current.x,goalY-current.y,.78);}
+      else if((pressure&&current.possessionTime>.35)||(windowOpen&&current.possessionTime>1.35)){const target=runOption||option,through=target===runOption;action(g,current.team,through?'through':'pass',target.q.x-current.x,target.q.y-current.y);}
     }
   }
   // Resolve only physical overlaps; anticipation and personal space do most work.
   for(let i=0;i<g.players.length;i++)for(let j=i+1;j<g.players.length;j++){
     const a=g.players[i],c=g.players[j],d=dist(a,c);if(d<18){const angle=(i+j*7)*2.39996,[dx,dy]=d>.01?unit(c.x-a.x,c.y-a.y):[Math.cos(angle),Math.sin(angle)];const n=(18-d)*(1-Math.exp(-10*dt))*.5;a.x=clamp(a.x-dx*n,9,W-9);a.y=clamp(a.y-dy*n,9,H-9);c.x=clamp(c.x+dx*n,9,W-9);c.y=clamp(c.y+dy*n,9,H-9);}
   }
-  if(b.owner!==null){const p=g.players[b.owner],speed=Math.hypot(p.vx,p.vy),touch=7+Math.min(1,speed/72)*5*(.5+.5*Math.sin((DURATION-g.clock)*9+p.id));
-    const blend=1-Math.exp(-(p.controlTime>0?10:24)*dt);b.x+=(p.x+p.fx*touch-b.x)*blend;b.y+=(p.y+p.fy*touch-b.y)*blend;b.vx=p.vx;b.vy=p.vy;b.control=p.controlTime;
+  if(b.owner!==null){const p=g.players[b.owner],speed=Math.hypot(p.vx,p.vy);p.touchPhase=(p.touchPhase||0)+speed*dt*.12;
+    const pulse=.5+.5*Math.sin(p.touchPhase+p.id),touch=5+Math.min(1,speed/72)*(3+5*pulse),side=Math.sin(p.touchPhase*.5+p.id)*Math.min(1,speed/72)*1.2;
+    const blend=1-Math.exp(-(p.controlTime>0?9:18)*dt),tx=p.x+p.fx*touch-p.fy*side,ty=p.y+p.fy*touch+p.fx*side;
+    b.x+=(tx-b.x)*blend;b.y+=(ty-b.y)*blend;b.vx=p.vx;b.vy=p.vy;b.control=p.controlTime;
   }
   else{
     const oldX=b.x,oldY=b.y;b.x+=b.vx*dt;b.y+=b.vy*dt;const drag=Math.exp(-.48*dt);b.vx*=drag;b.vy*=drag;
@@ -294,7 +336,13 @@ export function step(g,inputs=[{},{}],dt=1/30) {
     if(b.lock<=0){const candidates=[];const vx=b.x-oldX,vy=b.y-oldY,len=vx*vx+vy*vy;
       for(const p of g.players){const t=len?clamp(((p.x-oldX)*vx+(p.y-oldY)*vy)/len,0,1):0;const d=Math.hypot(p.x-(oldX+t*vx),p.y-(oldY+t*vy));
         const radius=p.n===1?22:12;if(d<radius&&!(p.cool>0&&p.team===b.last))candidates.push({p,t});}
-      candidates.sort((a,c)=>a.t-c.t);if(candidates.length){const {p,t}=candidates[0];receive(g,p,oldX+t*vx,oldY+t*vy);}
+      candidates.sort((a,c)=>a.t-c.t);if(candidates.length){const {p,t}=candidates[0],impactX=oldX+t*vx,impactY=oldY+t*vy,incoming=Math.hypot(b.vx,b.vy),hardShot=!g.pass&&incoming>210;
+        if(hardShot){
+          const [nx,ny]=unit(impactX-p.x,impactY-p.y),parry=p.n===1?.52:.38;
+          b.owner=null;b.x=impactX+nx*3;b.y=impactY+ny*3;b.vx=b.vx*parry+nx*incoming*.34;b.vy=b.vy*parry+ny*incoming*.34;b.lock=.1;b.last=p.team;
+          p.motion='block';p.motionTime=.34;g.message=p.n===1?'SAVE · LOOSE BALL':'SHOT BLOCKED';
+        }else receive(g,p,impactX,impactY);
+      }
     }
   }
   if(b.x<0||b.x>W){

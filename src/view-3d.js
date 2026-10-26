@@ -38,7 +38,7 @@ export function createPlayerModel(player){
   }
   const shadow=mesh(new THREE.CircleGeometry(.88,16),new THREE.MeshBasicMaterial({color:0x071d22,transparent:true,opacity:.2,depthWrite:false}),root,0,.045);
   shadow.rotation.x=-Math.PI/2;
-  root.userData={body,limbs,initialized:false,jerseyNumber:player.n,gaitPhase:player.id*2.39996,moveBlend:0};
+  root.userData={body,limbs,initialized:false,jerseyNumber:player.n,gaitPhase:player.id*2.39996,moveBlend:0,lastSpeed:0};
   return root;
 }
 
@@ -53,16 +53,20 @@ export function updatePlayerModel(model,player,now,dt=1/60,interpolate=false,pre
   const speed=Math.hypot(player.vx,player.vy),targetStride=Math.min(speed/65,1.35);
   model.userData.moveBlend+=(targetStride-model.userData.moveBlend)*(1-Math.exp(-10*dt));
   model.userData.gaitPhase+=speed/(30+player.id%5)*Math.PI*2*dt;
-  const phase=model.userData.gaitPhase,stride=model.userData.moveBlend,body=model.userData.body;
+  const phase=model.userData.gaitPhase,stride=model.userData.moveBlend,body=model.userData.body,acceleration=(speed-model.userData.lastSpeed)/Math.max(dt,1/240);model.userData.lastSpeed=speed;
   body.position.y=Math.abs(Math.sin(phase))*.055*stride;body.position.x=Math.sin(phase)*.025*stride;
-  body.rotation.x=.12*stride;body.rotation.y=THREE.MathUtils.clamp(turn,-.5,.5)*.35*stride;
+  body.rotation.x=.09*stride+THREE.MathUtils.clamp(acceleration/900,-.07,.1);body.rotation.y=THREE.MathUtils.clamp(turn,-.5,.5)*.35*stride;
   for(const {arm,leg,side,knee,elbow} of model.userData.limbs){
     const swing=Math.sin(phase)*side;leg.rotation.x=swing*.55*stride;arm.rotation.x=-swing*.42*stride;
-    knee.rotation.x=Math.max(0,-swing)*.75*stride;elbow.rotation.x=-.5*stride;
+    arm.rotation.z=side*.12;knee.rotation.x=Math.max(0,-swing)*.75*stride;elbow.rotation.x=-.5*stride;
     if(player.motionTime>0&&side===1){
       const duration=player.motion==='kick'?.32:player.motion==='tackle'?.4:.38;
       const motion=Math.sin(Math.min(1,player.motionTime/duration)*Math.PI);
-      leg.rotation.x-=motion*(player.motion==='kick'?.9:.48);knee.rotation.x+=motion*.25;
+      leg.rotation.x-=motion*(player.motion==='kick'?.9:player.motion==='touch'?.35:.48);knee.rotation.x+=motion*.25;
+    }
+    if(player.motionTime>0&&player.motion==='block'){
+      const motion=Math.sin(Math.min(1,player.motionTime/.34)*Math.PI);
+      arm.rotation.z+=side*.7*motion;arm.rotation.x-=.35*motion;knee.rotation.x+=.22*motion;
     }
   }
 }

@@ -35,6 +35,8 @@ An incoming ball now creates a 0.14–0.38 second settling touch based on its re
 
 The broadcast camera follows a weighted midpoint between the ball and controlled player and zooms out when they separate. A target marker identifies the intended receiving space, and the radar preserves awareness of the other twenty players. Player figures now use approximately human scale on the 105-by-68-metre pitch, and the goal is 7.32 metres wide by 2.44 metres high.
 
+The second mechanics pass makes low-speed acceleration quicker and high-speed acceleration more gradual. Original player roles now have distinct pace, control, and awareness traits. During possession, teammates coordinate a wall-pass option, forward diagonal, recycle outlet, and line-breaking runner. Normal passes account for the receiver's velocity and ball drag; through balls lead a moving runner according to their pace and the space around them. The practice AI waits for the move to develop, recognizes open forward lanes, and uses through balls for suitable runs. Hard shots now parry or deflect into loose-ball situations instead of attaching to a goalkeeper or defender on contact.
+
 ## Limits of this pass
 
 The current player is an original articulated low-poly figure. It has readable limbs, facing, stride, kick, touch, and tackle poses, but it is not yet a skinned production character with motion-captured animation blending. Ball play remains ground-only, and the simulation does not yet model fouls, offside, aerial duels, or individual player attributes. Those are separate systems; adding detailed models alone would not correct the pacing and control problems recorded above.

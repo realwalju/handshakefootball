@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createGame,step,action,W,H} from '../public/engine.js';
 const playable=()=>{const g=createGame();g.phase='playing';return g;};
 test('two complete teams, opposing formations, and a human-controlled kickoff',()=>{const g=createGame();assert.equal(g.players.length,22);assert.equal(g.players.filter(p=>p.n===1).length,2);assert.equal(g.ball.owner,g.selected[0]);assert.ok(g.players[11].x>g.players[0].x);});
+test('roles carry distinct pace, control and awareness traits',()=>{const g=createGame(),winger=g.players[5],centreBack=g.players[2],midfielder=g.players[7];assert.ok(winger.pace>centreBack.pace);assert.ok(midfielder.control>centreBack.control);assert.ok(midfielder.awareness>winger.awareness);});
 test('passing releases a readable ball and switches control to a teammate',()=>{const g=playable(),id=g.ball.owner;assert.equal(action(g,0,'pass',1,0),true);assert.equal(g.ball.owner,null);assert.notEqual(g.selected[0],id);assert.equal(g.players[g.selected[0]].team,0);const speed=Math.hypot(g.ball.vx,g.ball.vy);assert.ok(speed>=155&&speed<=245);});
 test('the opponent cannot pass a ball it does not possess',()=>{const g=playable();assert.equal(action(g,1,'pass',-1,0),false);assert.equal(g.ball.owner,9);});
 test('each human can switch defenders and send a through ball with receiver control',()=>{
@@ -20,7 +21,11 @@ test('invalid action directions cannot corrupt the shared simulation',()=>{
   assert.equal(action(g,0,'pass',1,bad),false);assert.equal(JSON.stringify(g),before);
  }
 });
-test('a swept shot can be saved rather than tunnelling through a goalkeeper',()=>{const g=playable();for(const p of g.players){p.x=400;p.y=80;}const keeper=g.players[11];keeper.x=W-30;keeper.y=340;g.ball={x:W-35,y:340,vx:900,vy:0,owner:null,lock:0,last:0};step(g,[{},{}],.05);assert.equal(g.ball.owner,keeper.id);assert.deepEqual(g.score,[0,0]);});
+test('a keeper catches passes but parries hard shots without tunnelling',()=>{
+ const fixture=speed=>{const g=playable();for(const p of g.players){p.x=400;p.y=80;}const keeper=g.players[11];keeper.x=W-30;keeper.y=340;g.ball={x:W-35,y:340,vx:speed,vy:0,owner:null,lock:0,last:0};return {g,keeper};};
+ let {g,keeper}=fixture(180);g.pass={team:0,to:10,time:1};step(g,[{},{}],.05);assert.equal(g.ball.owner,keeper.id);
+ ({g,keeper}=fixture(900));step(g,[{},{}],.05);assert.equal(g.ball.owner,null);assert.equal(g.message,'SAVE · LOOSE BALL');assert.ok(g.ball.vx<900);assert.deepEqual(g.score,[0,0]);
+});
 test('crossing the goal line scores once and restarts with the conceding team',()=>{const g=playable();g.ball={x:W-1,y:340,vx:900,vy:0,owner:null,lock:1,last:0};step(g);assert.deepEqual(g.score,[1,0]);assert.equal(g.phase,'goal');assert.equal(g.players[g.ball.owner].team,1);for(let i=0;i<30;i++)step(g);assert.deepEqual(g.score,[1,0]);});
 test('touchline exit awards possession to the other team',()=>{const g=playable();g.ball={x:400,y:1,vx:0,vy:-400,owner:null,lock:1,last:0};step(g);assert.equal(g.phase,'restart');assert.equal(g.message,'THROW IN');assert.equal(g.players[g.ball.owner].team,1);});
 test('keeper settles the ball and automatically distributes possession',()=>{const g=playable();g.ball.owner=0;g.selected[0]=0;g.players[0].cool=.8;for(let i=0;i<60&&g.ball.owner===0;i++)step(g);assert.notEqual(g.ball.owner,0);assert.notEqual(g.selected[0],0);});

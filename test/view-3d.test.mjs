@@ -25,6 +25,7 @@ test('3D models map pitch coordinates, face movement and animate without mutatin
   assert.notEqual(model.userData.limbs[0].leg.rotation.x,0);assert.equal(JSON.stringify(player),before);
   const moving=Math.abs(model.userData.limbs[0].leg.rotation.x);updatePlayerModel(model,{...player,vx:0},1100);
   assert.ok(Math.abs(model.userData.limbs[0].leg.rotation.x)<moving);
+  const arm=model.userData.limbs[0].arm,restingArm=Math.abs(arm.rotation.z);updatePlayerModel(model,{...player,vx:0,motion:'block',motionTime:.17},1150);assert.ok(Math.abs(arm.rotation.z)>restingArm);
   for(let i=0;i<60;i++)updatePlayerModel(model,{...player,vx:0},1200+i*17);
   assert.ok(Math.abs(model.userData.limbs[0].leg.rotation.x)<.001);
 });

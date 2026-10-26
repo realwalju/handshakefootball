@@ -19,8 +19,15 @@ test('teammates create independent support angles and preserve width behind a st
   const angles=new Set(moved.map(p=>Math.round(Math.atan2(p.y-start[p.id].y,p.x-start[p.id].x)/.6)));
   t.diagnostic(`Moved: ${moved.length}; support options: ${nearby.length}; distinct run directions: ${angles.size}`);
   assert.ok(moved.length>=5);assert.ok(nearby.length>=2);assert.ok(angles.size>=3);
-  assert.ok(g.players[5].y<190&&g.players[8].y>H-190);
+  assert.ok(teammates.some(p=>p.y<100)&&teammates.some(p=>p.y>H-100));
+  assert.deepEqual(new Set(teammates.map(p=>p.intent).filter(i=>/option|diagonal/.test(i))),new Set(['wall pass option','forward diagonal','recycle option']));
+  assert.ok(teammates.some(p=>p.intent==='line-breaking run'));
   assert.ok(g.players[2].x<carrier.x&&g.players[3].x<carrier.x);
+});
+test('directional passing exposes a wall option, forward diagonal and recycle outlet',()=>{
+  const base=playing();run(base,120);const found=new Set(),receivers=new Set();
+  for(const [x,y] of [[1,0],[0,-1],[-1,0]]){const g=structuredClone(base);g.players[g.ball.owner].cool=0;assert.equal(action(g,0,'pass',x,y),true);const receiver=g.players[g.selected[0]];found.add(receiver.intent);receivers.add(receiver.id);}
+  assert.deepEqual(found,new Set(['forward diagonal','wall pass option','recycle option']));assert.equal(receivers.size,3);
 });
 test('defenders press and cover without every player chasing the ball',t=>{
   const g=playing();run(g,100);const b=g.ball,defenders=g.players.filter(p=>p.team===1&&p.n!==1);
@@ -34,7 +41,8 @@ function throughFixture(){
   g.ball={x:512,y:340,vx:0,vy:0,owner:9,lock:0,last:0};return g;
 }
 test('a through-ball receiver runs onto the pass without input while the passer moves forward',()=>{
-  const g=throughFixture();assert.equal(action(g,0,'through',1,0),true);assert.equal(g.selected[0],10);
+  const g=throughFixture(),receiverX=g.players[10].x;assert.equal(action(g,0,'through',1,0),true);assert.equal(g.selected[0],10);
+  assert.ok(g.pass.x>receiverX);assert.ok(Math.hypot(g.ball.vx,g.ball.vy)>=195&&Math.hypot(g.ball.vx,g.ball.vy)<=285);
   run(g,30);assert.ok(g.players[10].x>680);assert.ok(g.players[9].x>545);
   assert.equal(g.ball.owner,10);
 });
