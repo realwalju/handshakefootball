@@ -8,9 +8,14 @@
 - Verified both teams can switch defenders and transfer control with through balls.
 - Rejected malformed action directions before they can corrupt shared game state; invalid JSON payload shapes and oversized room-creation requests return client errors.
 - Automated network checks cover two authenticated players, shared snapshots, disconnect pause, reconnect, mutual rematch, and health/static routes.
-- Vercel deployment uses shared Postgres rooms and authenticated polling. Automated checks cover concurrent instances and two simulated browser clients; real cloud-database and public URL verification are recorded after deployment.
-- Browser automation stopped because it could not verify the current Chrome URL. Visual rendering, touch interaction, and two physical devices have **not** been verified.
-- Public deployment and challenge submission are still pending.
+- Published on Vercel at https://soccer.walju.net, with https://touchline-duel.vercel.app as its fallback. Free Neon room storage is connected; the custom domain is verified and its Cloudflare CNAME is correct.
+- The real Postgres integration check passed: concurrent joins, version conflicts, two-player movement, passing, and disconnect state.
+- Public HTTPS checks passed for the page, assets, database health, room authentication, passing, movement, switching, and reconnect. No login is needed to play.
+- The complete public three-minute match and mutual rematch test passed: 1,333 requests, median response 115 ms, p95 171 ms, and zero recovered upstream errors in the successful run. These are observations from one test location, not a guarantee for every network.
+- Visually checked the deployed lobby and 22-player pitch in Chrome and created a room through the browser client. Browser automation then stopped because it could not verify the current URL; a second browser seat, phone controls, and two physical devices remain unverified.
+- An early full-match attempt encountered one transient Vercel `DEPLOYMENT_NOT_FOUND` response during initial domain propagation. Later health checks passed on both verified edge addresses. The live test retries temporary sync failures as the client does; room/auth failures and actions are not retried.
+- Local DNS initially cached an earlier NXDOMAIN. It subsequently resolved normally, and the custom domain returned HTTP 200 without any DNS override. Use the fallback URL if another resolver has not updated yet.
+- Challenge submission is still pending.
 
 ## Five-minute test with a friend
 

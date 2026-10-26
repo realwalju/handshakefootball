@@ -1,5 +1,7 @@
 # Touchline Duel
 
+[Play at soccer.walju.net](https://soccer.walju.net) · [Vercel fallback URL](https://touchline-duel.vercel.app)
+
 A first playable soccer prototype: two human rivals, each controlling a full team of eleven. Passes switch control to their intended receiver; the remaining footballers maintain a simple 4–4–2 shape.
 
 ## Run the multiplayer game
@@ -96,6 +98,14 @@ npx vercel env pull .env.local
 node --env-file=.env.local --test test/postgres.integration.mjs
 ```
 
+The public HTTPS smoke test runs a complete three-minute two-player match and rematch against the published game:
+
+```sh
+node --test test/live.integration.mjs
+```
+
+For a freshly configured domain, some local DNS caches can take longer to update. The Vercel fallback URL serves the same deployment. The live test optionally accepts `TOUCHLINE_TEST_IPV4` for a DNS override; TLS certificate verification remains enabled.
+
 ## Suggested remaining schedule
 
 - October 26: playtest movement, passing targets, and receiver control; fix confusing behavior.
@@ -109,4 +119,4 @@ Handshake's landing page says October 31, but the linked official rules specify 
 - https://joinhandshake.com/learn/create-a-multiplayer-game-8d7d59b5/
 - https://go.joinhandshake.com/rs/390-ZTF-353/images/%5BAI_Skills_Studio_Challenge%5D_Contest_Official_Rules.pdf?version=0
 
-Project working title: **Touchline Duel**. This project has not been published or submitted.
+Project title: **Touchline Duel**. Published on Vercel at https://soccer.walju.net, with https://touchline-duel.vercel.app as its fallback URL. Challenge submission is still pending.
